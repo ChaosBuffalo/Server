@@ -24,6 +24,8 @@
 
 #include "../common/data_verification.h"
 
+#include "../common/item_data.h"
+
 #include "client.h"
 #include "mob.h"
 
@@ -588,18 +590,98 @@ int32 Client::CalcMaxMana()
 	if (max_mana < 0) {
 		max_mana = 0;
 	}
-	if (current_mana > max_mana) {
-		current_mana = max_mana;
-	}
-	int mana_perc_cap = spellbonuses.ManaPercCap[0];
-	if (mana_perc_cap) {
-		int curMana_cap = (max_mana * mana_perc_cap) / 100;
-		if (current_mana > curMana_cap || (spellbonuses.ManaPercCap[1] && current_mana > spellbonuses.ManaPercCap[1])) {
-			current_mana = curMana_cap;
-		}
-	}
+	//if (current_mana > max_mana) {
+	//	current_mana = max_mana;
+	//}
+	//int mana_perc_cap = spellbonuses.ManaPercCap[0];
+	//if (mana_perc_cap) {
+	//	int curMana_cap = (max_mana * mana_perc_cap) / 100;
+	//	if (current_mana > curMana_cap || (spellbonuses.ManaPercCap[1] && current_mana > spellbonuses.ManaPercCap[1])) {
+	//		current_mana = curMana_cap;
+	//	}
+	//}
 	LogSpells("Client::CalcMaxMana() called for [{}] - returning [{}]", GetName(), max_mana);
 	return max_mana;
+}
+
+void Client::SyncCBManaToClient(int vanilla, int cb)
+{
+	const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
+	if (inst == nullptr)
+		return;
+	EQ::ItemData data = *inst->GetItem();
+	data.Mana = cb - vanilla;
+	EQ::ItemInstance copy{*inst, data};
+	LogDebug("Client::SyncCBManaToClient() called for [{}] - returning [{}]", GetName(), cb - vanilla);
+	ToggleTribute(true);
+	PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN, copy, false);
+	SendItemPacket(EQ::invslot::TRIBUTE_BEGIN, &copy, ItemPacketTributeItem);
+	CalcBonuses();
+
+}
+
+int32 Client::CalcCBMaxMana()
+{
+	int totalMana;
+	switch (GetCasterClass()) {
+	case 'I':
+	case 'W': {
+		totalMana = (CalcCBBaseMana() + itembonuses.Mana + spellbonuses.Mana + aabonuses.Mana + GroupLeadershipAAManaEnhancement());
+		break;
+	}
+	case 'N': {
+		totalMana = 0;
+		break;
+	}
+	default: {
+		LogDebug("Invalid Class [{}] in CalcCBMaxMana", GetCasterClass());
+		totalMana = 0;
+		break;
+	}
+	}
+	if (totalMana < 0) {
+		totalMana = 0;
+	}
+	LogDebug("Client::CalcCBMaxMana() called for [{}] - returning [{}]", GetName(), totalMana);
+	cb_max_mana = totalMana;
+	return totalMana;
+}
+
+int32 Client::CalcCBBaseMana()
+{
+	int32 max_m = 0;
+	int Wis = GetWIS();
+	int Cha = GetCHA();
+	int Int = GetINT();
+	int TotalRawStatCount = 0;
+	int ConvertedWisInt = 0;
+	LogDebug("Client::CalcCBBaseMana() called for [{}] - Int [{}] Wis [{}] Cha [{}]", GetName(), Int, Wis, Cha);
+	const BaseDataStruct* base_data = nullptr;
+	switch (GetCasterClass()) {
+		case 'I':
+		case 'W':
+			TotalRawStatCount = 10 * Int + 8 * Wis + 5 * Cha;
+			ConvertedWisInt = (((5 * (400 + TotalRawStatCount)) / 2) * 5 * GetLevel() / 400);
+			LogDebug("Client::CalcCBBaseMana() called for [{}] - Raw Weight [{}] Final [{}]", GetName(), TotalRawStatCount, ConvertedWisInt);
+			base_data = database.GetBaseData(GetLevel(), GetClass());
+			if (base_data) {
+				max_m = base_data->base_mana + (ConvertedWisInt * base_data->mana_factor) + (GetHeroicINT() * 10 + GetHeroicWIS() * 8 + GetHeroicCHA() * 5);
+			}
+			break;
+		case 'N': {
+			max_m = 0;
+			break;
+		}
+		default: {
+			LogDebug("Invalid Class [{}] in CalcCBBaseMana", GetCasterClass());
+			max_m = 0;
+			break;
+		}
+	}
+	#if EQDEBUG >= 11
+		LogDebug("Client::CalcCBBaseMana() called for [{}] - returning [{}]", GetName(), max_m);
+	#endif
+	return max_m;
 }
 
 int32 Client::CalcBaseMana()

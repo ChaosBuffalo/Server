@@ -431,6 +431,11 @@ public:
 	inline uint32 GetBindInstanceID(uint32 index = 0) const { return m_pp.binds[index].instance_id; }
 	int32 CalcMaxMana();
 	int32 CalcBaseMana();
+	int32 CalcCBBaseMana();
+	int32 CalcCBMaxMana();
+
+	void SyncCBManaToClient(int vanilla, int cb);
+
 	const int32& SetMana(int32 amount);
 	int32 CalcManaRegenCap();
 
@@ -1595,6 +1600,7 @@ protected:
 	void FinishAlternateAdvancementPurchase(AA::Rank *rank, bool ignore_cost);
 
 	Mob* bind_sight_target;
+	int cb_max_mana;
 
 	glm::vec4 m_AutoAttackPosition;
 	glm::vec3 m_AutoAttackTargetLocation;

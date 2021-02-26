@@ -500,6 +500,11 @@ bool Client::Process() {
 		if (tic_timer.Check() && !dead) {
 			CalcMaxHP();
 			CalcMaxMana();
+			int vanillaMaxMana = GetMaxMana();
+			int cbMaxMana = CalcCBMaxMana();
+			if (cbMaxMana != vanillaMaxMana) {
+				SyncCBManaToClient(vanillaMaxMana, cbMaxMana);
+			}
 			CalcATK();
 			CalcMaxEndurance();
 			CalcRestState();
@@ -1797,10 +1802,10 @@ void Client::DoHPRegen() {
 }
 
 void Client::DoManaRegen() {
-	if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0)
+	if (GetMana() >= cb_max_mana && spellbonuses.ManaRegen >= 0)
 		return;
 
-	if (GetMana() < max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
+	if (GetMana() < cb_max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
 		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
 
 	SetMana(GetMana() + CalcManaRegen());

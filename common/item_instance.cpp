@@ -143,6 +143,13 @@ EQ::ItemInstance::ItemInstance(ItemInstTypes use_type) {
 	m_new_id_file = 0;
 }
 
+// Copy but replace the ItemData with a dynamic one
+EQ::ItemInstance::ItemInstance(const ItemInstance& copy, const ItemData& itemDataReplace)
+: ItemInstance(copy)
+{
+	m_item = new ItemData(itemDataReplace);
+}
+
 // Make a copy of an EQ::ItemInstance object
 EQ::ItemInstance::ItemInstance(const ItemInstance& copy)
 {
