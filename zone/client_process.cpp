@@ -114,6 +114,12 @@ bool Client::Process() {
 				HandleRespawnFromHover(0);
 		}
 
+		if (firstSync) {
+			CalcBonuses();
+			firstSync = false;
+			SendManaUpdate();
+		}
+
 		if (IsTracking() && (ClientVersion() >= EQ::versions::ClientVersion::SoD) && TrackingTimer.Check())
 			DoTracking();
 
@@ -126,6 +132,7 @@ bool Client::Process() {
 		if (!is_client_moving && position_update_timer.Check()) {
 			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 		}
+
 
 		if (mana_timer.Check())
 			CheckManaEndUpdate();
@@ -537,11 +544,7 @@ bool Client::Process() {
 			}
 		}
 
-		if (firstSync) {
-			CalcBonuses();
-			firstSync = false;
-			SendManaUpdate();
-		}
+
 	}
 
 	if (client_state == CLIENT_KICKED) {
