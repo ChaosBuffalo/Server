@@ -117,7 +117,6 @@ bool Client::Process() {
 		if (firstSync) {
 			CalcBonuses();
 			firstSync = false;
-			SendManaUpdate();
 		}
 
 		if (IsTracking() && (ClientVersion() >= EQ::versions::ClientVersion::SoD) && TrackingTimer.Check())
@@ -514,6 +513,12 @@ bool Client::Process() {
 			DoManaRegen();
 			DoEnduranceRegen();
 			BuffProcess();
+			if (cb_early_sync_count < 3) {
+				last_reported_mana = -1;
+				CheckManaEndUpdate();
+				cb_early_sync_count++;
+			}
+
 
 			//if (tribute_timer.Check()) {
 			//	ToggleTribute(true);	//re-activate the tribute.

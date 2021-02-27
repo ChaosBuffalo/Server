@@ -1606,6 +1606,7 @@ protected:
 	Mob* bind_sight_target;
 	int cb_max_mana;
 	int cb_max_mana_minus_tribute;
+	int cb_early_sync_count;
 	bool firstSync;
 
 	glm::vec4 m_AutoAttackPosition;
