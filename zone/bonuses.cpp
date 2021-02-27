@@ -73,6 +73,12 @@ void NPC::CalcBonuses()
 	Mob::CalcBonuses();
 }
 
+void Client::HandleCBStatCorrections()
+{
+	CalcCBMaxMana();
+	HandleTributeSyncingOfStats();
+}
+
 void Client::CalcBonuses()
 {
 	memset(&itembonuses, 0, sizeof(StatBonuses));
@@ -107,6 +113,11 @@ void Client::CalcBonuses()
 	CalcMaxHP();
 	CalcMaxMana();
 	CalcMaxEndurance();
+
+	HandleCBStatCorrections();
+	//We need to calc item bonuses again cause tribute items have been modified in the stat correction step
+	memset(&itembonuses, 0, sizeof(StatBonuses));
+	CalcItemBonuses(&itembonuses);
 
 	SetAttackTimer();
 

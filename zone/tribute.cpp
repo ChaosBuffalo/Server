@@ -177,7 +177,7 @@ void Client::DoTributeUpdate() {
 	//			DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
 	//	}
 	//}
-	CalcBonuses();
+	//CalcBonuses();
 }
 
 void Client::SendTributeTimer() {

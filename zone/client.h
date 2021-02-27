@@ -434,7 +434,9 @@ public:
 	int32 CalcCBBaseMana();
 	int32 CalcCBMaxMana();
 
-	void SyncCBManaToClient(int vanilla, int cb);
+	void HandleTributeSyncingOfStats();
+
+	void HandleCBStatCorrections();
 
 	const int32& SetMana(int32 amount);
 	int32 CalcManaRegenCap();
@@ -554,6 +556,8 @@ public:
 	inline virtual int32 GetWindMod() const { return itembonuses.windMod; }
 
 	inline virtual int32 GetDelayDeath() const { return aabonuses.DelayDeath + spellbonuses.DelayDeath + itembonuses.DelayDeath + 11; }
+
+	inline virtual int32 GetMaxMana() const { return cb_max_mana - cb_max_mana_minus_tribute; }
 
 	int32 GetActSpellCost(uint16 spell_id, int32);
 	int32 GetActSpellCasttime(uint16 spell_id, int32);
@@ -1601,6 +1605,8 @@ protected:
 
 	Mob* bind_sight_target;
 	int cb_max_mana;
+	int cb_max_mana_minus_tribute;
+	bool firstSync;
 
 	glm::vec4 m_AutoAttackPosition;
 	glm::vec3 m_AutoAttackTargetLocation;

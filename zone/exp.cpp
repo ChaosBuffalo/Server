@@ -871,7 +871,7 @@ void Client::SetLevel(uint8 set_level, bool command)
 
 	DoTributeUpdate();
 	SendHPUpdate();
-	SetMana(CalcMaxMana());
+	SetMana(GetMaxMana());
 	UpdateWho();
 
 	UpdateMercLevel();

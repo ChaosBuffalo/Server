@@ -604,20 +604,21 @@ int32 Client::CalcMaxMana()
 	return max_mana;
 }
 
-void Client::SyncCBManaToClient(int vanilla, int cb)
+void Client::HandleTributeSyncingOfStats()
 {
 	const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
 	if (inst == nullptr)
 		return;
 	EQ::ItemData data = *inst->GetItem();
-	data.Mana = cb - vanilla;
+	int base = CalcBaseMana();
+	int newMana = CalcCBBaseMana();
+	data.Mana = newMana - base;
+	cb_max_mana_minus_tribute = data.Mana;
 	EQ::ItemInstance copy{*inst, data};
-	LogDebug("Client::SyncCBManaToClient() called for [{}] - returning [{}]", GetName(), cb - vanilla);
+	LogDebug("Client::SyncCBManaToClient() called for [{}] - Base [{}] New [{}] Modifier: [{}]", GetName(), base, newMana, data.Mana);
 	ToggleTribute(true);
 	PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN, copy, false);
 	SendItemPacket(EQ::invslot::TRIBUTE_BEGIN, &copy, ItemPacketTributeItem);
-	CalcBonuses();
-
 }
 
 int32 Client::CalcCBMaxMana()

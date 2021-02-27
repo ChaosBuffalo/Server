@@ -1577,7 +1577,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		m_pp.cur_hp = GetMaxHP();
 
 	SetHP(m_pp.cur_hp);
-	Mob::SetMana(m_pp.mana); // mob function doesn't send the packet
+	// We need to not use mob or it'll override our max mana 
+	LogDebug("Client Packet Sync() called for [{}] - Mana [{}]", GetName(), m_pp.mana);
+	SetMana(m_pp.mana); // mob function doesn't send the packet
 	SetEndurance(m_pp.endurance);
 
 	/* Update LFP in case any (or all) of our group disbanded while we were zoning. */
@@ -1685,11 +1687,11 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	FastQueuePacket(&outapp);
 
 	/* Tribute Packets */
-	DoTributeUpdate();
-	if (m_pp.tribute_active) {
-		//restart the tribute timer where we left off
-		tribute_timer.Start(m_pp.tribute_time_remaining);
-	}
+	//DoTributeUpdate();
+	//if (m_pp.tribute_active) {
+	//	//restart the tribute timer where we left off
+	//	tribute_timer.Start(m_pp.tribute_time_remaining);
+	//}
 
 	/*
 	Character Inventory Packet

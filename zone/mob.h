@@ -550,7 +550,7 @@ public:
 	inline int32 GetHP() const { return current_hp; }
 	inline int32 GetMaxHP() const { return max_hp; }
 	virtual int32 CalcMaxHP();
-	inline int32 GetMaxMana() const { return max_mana; }
+	inline virtual int32 GetMaxMana() const { return max_mana; }
 	inline int32 GetMana() const { return current_mana; }
 	virtual int32 GetEndurance() const { return 0; }
 	virtual int32 GetMaxEndurance() const { return 0; }
@@ -558,8 +558,8 @@ public:
 	int32 GetItemHPBonuses();
 	int32 GetSpellHPBonuses();
 	virtual const int32& SetMana(int32 amount);
-	inline float GetManaRatio() const { return max_mana == 0 ? 100 :
-		((static_cast<float>(current_mana) / max_mana) * 100); }
+	inline float GetManaRatio() const { return GetMaxMana() == 0 ? 100 :
+		((static_cast<float>(current_mana) / GetMaxMana()) * 100); }
 	virtual int32 CalcMaxMana();
 	uint32 GetNPCTypeID() const { return npctype_id; }
 	void SetNPCTypeID(uint32 npctypeid) { npctype_id = npctypeid; }
@@ -1123,7 +1123,7 @@ public:
 	Timer GetAttackTimer() { return attack_timer; }
 	Timer GetAttackDWTimer() { return attack_dw_timer; }
 	inline bool IsFindable() { return findable; }
-	inline uint8 GetManaPercent() { return (uint8)((float)current_mana / (float)max_mana * 100.0f); }
+	inline uint8 GetManaPercent() { return (uint8)((float)current_mana / (float)GetMaxMana() * 100.0f); }
 	virtual uint8 GetEndurancePercent() { return 0; }
 
 	inline virtual bool IsBlockedBuff(int16 SpellID) { return false; }

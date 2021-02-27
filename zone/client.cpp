@@ -173,7 +173,10 @@ Client::Client(EQStreamInterface* ieqs)
   hp_other_update_throttle_timer(500),
   position_update_timer(10000),
   consent_throttle_timer(2000),
-  tmSitting(0)
+  tmSitting(0),
+  cb_max_mana(0),
+  firstSync(true),
+  cb_max_mana_minus_tribute(0)
 {
 
 	for (int client_filter = 0; client_filter < _FilterCount; client_filter++)
@@ -1861,8 +1864,8 @@ const int32& Client::SetMana(int32 amount) {
 	if (amount != current_mana)
 		update = true;
 	current_mana = amount;
-	if (update)
-		Mob::SetMana(amount);
+	//if (update)
+	//	Mob::SetMana(amount);
 	CheckManaEndUpdate();
 	return current_mana;
 }
@@ -1953,6 +1956,7 @@ void Client::SendManaUpdate()
 	ManaUpdate_Struct* mana_update = (ManaUpdate_Struct*)mana_app->pBuffer;
 	mana_update->cur_mana = GetMana();
 	mana_update->max_mana = GetMaxMana();
+	LogDebug("Client::SendManaUpdate() called for [{}] - returning [{}], [{}]", GetName(), mana_update->cur_mana, mana_update->max_mana);
 	mana_update->spawn_id = GetID();
 	QueuePacket(mana_app);
 	safe_delete(mana_app);
@@ -6557,10 +6561,10 @@ void Client::SendStatsWindow(Client* client, bool use_window)
 				break;
 			}
 			case 1: {
-				if(CalcMaxMana() > 0) {
+				if(GetMaxMana() > 0) {
 					cur_name = " M: ";
 					cur_field = itoa(GetMana());
-					total_field = itoa(CalcMaxMana());
+					total_field = itoa(GetMaxMana());
 				}
 				else { continue; }
 
@@ -6623,7 +6627,7 @@ void Client::SendStatsWindow(Client* client, bool use_window)
 				break;
 			}
 			case 1: {
-				if(CalcMaxMana() > 0) {
+				if(GetMaxMana() > 0) {
 					regen_row_header = "M: ";
 					regen_row_color = color_blue;
 

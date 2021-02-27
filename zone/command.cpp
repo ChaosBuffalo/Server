@@ -2633,9 +2633,9 @@ void command_mana(Client *c, const Seperator *sep)
 	t = c->GetTarget() ? c->GetTarget() : c;
 
 	if(t->IsClient())
-		t->CastToClient()->SetMana(t->CastToClient()->CalcMaxMana());
+		t->CastToClient()->SetMana(t->CastToClient()->GetMaxMana());
 	else
-		t->SetMana(t->CalcMaxMana());
+		t->SetMana(t->GetMaxMana());
 }
 
 void command_flymode(Client *c, const Seperator *sep)

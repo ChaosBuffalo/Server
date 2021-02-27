@@ -500,11 +500,6 @@ bool Client::Process() {
 		if (tic_timer.Check() && !dead) {
 			CalcMaxHP();
 			CalcMaxMana();
-			int vanillaMaxMana = GetMaxMana();
-			int cbMaxMana = CalcCBMaxMana();
-			if (cbMaxMana != vanillaMaxMana) {
-				SyncCBManaToClient(vanillaMaxMana, cbMaxMana);
-			}
 			CalcATK();
 			CalcMaxEndurance();
 			CalcRestState();
@@ -513,9 +508,9 @@ bool Client::Process() {
 			DoEnduranceRegen();
 			BuffProcess();
 
-			if (tribute_timer.Check()) {
-				ToggleTribute(true);	//re-activate the tribute.
-			}
+			//if (tribute_timer.Check()) {
+			//	ToggleTribute(true);	//re-activate the tribute.
+			//}
 
 			if (fishing_timer.Check()) {
 				GoFish();
@@ -540,6 +535,12 @@ bool Client::Process() {
 			{
 				ItemTimerCheck();
 			}
+		}
+
+		if (firstSync) {
+			CalcBonuses();
+			firstSync = false;
+			SendManaUpdate();
 		}
 	}
 
@@ -1802,10 +1803,10 @@ void Client::DoHPRegen() {
 }
 
 void Client::DoManaRegen() {
-	if (GetMana() >= cb_max_mana && spellbonuses.ManaRegen >= 0)
+	if (GetMana() >= GetMaxMana() && spellbonuses.ManaRegen >= 0)
 		return;
 
-	if (GetMana() < cb_max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
+	if (GetMana() < GetMaxMana() && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
 		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
 
 	SetMana(GetMana() + CalcManaRegen());
