@@ -2160,6 +2160,11 @@ bool Client::StoreCharacter(
 		}
 		i++;
 	}
+	std::string aaquery = StringFormat(
+		"INSERT INTO `character_alternate_abilities` (id, aa_id, aa_value, charges) VALUES (%u, 20700, 1, 0)",
+		character_id
+	);
+	database.QueryDatabase(aaquery);
 
 	return true;
 }

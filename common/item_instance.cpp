@@ -147,6 +147,7 @@ EQ::ItemInstance::ItemInstance(ItemInstTypes use_type) {
 EQ::ItemInstance::ItemInstance(const ItemInstance& copy, const ItemData& itemDataReplace)
 : ItemInstance(copy)
 {
+	safe_delete(m_item);
 	m_item = new ItemData(itemDataReplace);
 }
 

@@ -1576,9 +1576,8 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	if (m_pp.cur_hp <= 0)
 		m_pp.cur_hp = GetMaxHP();
 
-	SetHP(m_pp.cur_hp);
-	// We need to not use mob or it'll override our max mana 
-	LogDebug("Client Packet Sync() called for [{}] - Mana [{}]", GetName(), m_pp.mana);
+	// We need to avoid error checking for Set functions right now because of the adjustment coming to maxes
+	current_hp = m_pp.cur_hp;
 	current_mana = m_pp.mana; // mob function doesn't send the packet
 	SetEndurance(m_pp.endurance);
 
@@ -1795,7 +1794,7 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 		if (m_epp.perAA > 0)
 			MessageString(Chat::White, AA_OFF);
 
-		m_epp.perAA = 0;
+		m_epp.perAA = 100;
 		SendAlternateAdvancementStats();
 	}
 	else if (action->action == aaActionSetEXP) {
@@ -1803,7 +1802,7 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 			MessageString(Chat::White, AA_ON);
 		m_epp.perAA = action->exp_value;
 		if (m_epp.perAA < 0 || m_epp.perAA > 100)
-			m_epp.perAA = 0;	// stop exploit with sanity check
+			m_epp.perAA = 100;	// stop exploit with sanity check
 
 								// send an update
 		SendAlternateAdvancementStats();

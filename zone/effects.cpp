@@ -62,12 +62,27 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 	if (spell_id == SPELL_IMP_HARM_TOUCH && IsClient()) //Improved Harm Touch
 		value -= GetAA(aaUnholyTouch) * 450; //Unholy Touch
 
-		chance = RuleI(Spells, BaseCritChance); //Wizard base critical chance is 2% (Does not scale with level)
-		chance += itembonuses.CriticalSpellChance + spellbonuses.CriticalSpellChance + aabonuses.CriticalSpellChance;
-		chance += itembonuses.FrenziedDevastation + spellbonuses.FrenziedDevastation + aabonuses.FrenziedDevastation;
+	chance = RuleI(Spells, BaseCritChance); //Wizard base critical chance is 2% (Does not scale with level)
+	chance += itembonuses.CriticalSpellChance + spellbonuses.CriticalSpellChance + aabonuses.CriticalSpellChance;
+	chance += itembonuses.FrenziedDevastation + spellbonuses.FrenziedDevastation + aabonuses.FrenziedDevastation;
+
+	if (IsClient()) {
+		int dex_bonus = GetDEX() * 8;
+		if (dex_bonus > 255)
+			dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		int int_bonus = GetINT() * 4;
+		if (int_bonus > 255) {
+			int_bonus = 255 + ((int_bonus - 255) / 5);
+		}
+		chance += (dex_bonus + int_bonus) / 8900.0f;
+		int damageBonus = GetINT() * 2 + GetCHA();
+		float bonus_damage = value_BaseEffect * (damageBonus / 1000);
+		value += bonus_damage;
+		value_BaseEffect += bonus_damage;
+	}
 
 	//Crtical Hit Calculation pathway
-	if (chance > 0 || (IsClient() && GetClass() == WIZARD && GetLevel() >= RuleI(Spells, WizCritLevel))) {
+	if (chance > 0 || (IsClient() && GetLevel() >= RuleI(Spells, WizCritLevel))) {
 
 		 int32 ratio = RuleI(Spells, BaseCritRatio); //Critical modifier is applied from spell effects only. Keep at 100 for live like criticals.
 
@@ -84,7 +99,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			ratio += itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
 		}
 
-		else if ((IsClient() && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
+		else if (IsClient() || (IsMerc() && GetClass() == CASTERDPS)) {
 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))){
 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
 				ratio += zone->random.Int(20,70);
@@ -184,6 +199,21 @@ int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
 
 	value_BaseEffect = value + (value*GetFocusEffect(focusFcBaseEffects, spell_id)/100);
 
+	if (IsClient()) {
+		int dex_bonus = GetDEX() * 8;
+		if (dex_bonus > 255)
+			dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		int int_bonus = GetINT() * 4;
+		if (int_bonus > 255) {
+			int_bonus = 255 + ((int_bonus - 255) / 5);
+		}
+		chance += (dex_bonus + int_bonus) / 8900.0f;
+		int damageBonus = GetINT() * 2 + GetCHA();
+		float bonus_damage = value_BaseEffect * (damageBonus / 1000.0f);
+		value += bonus_damage;
+		value_BaseEffect += bonus_damage;
+	}
+
 	if (chance > 0 && (zone->random.Roll(chance))) {
 		int32 ratio = 200;
 		ratio += itembonuses.DotCritDmgIncrease + spellbonuses.DotCritDmgIncrease + aabonuses.DotCritDmgIncrease;
@@ -276,12 +306,30 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 
 	value += int(value_BaseEffect*GetFocusEffect(focusImprovedHeal, spell_id)/100);
 
+	if (IsClient()) {
+		int damageBonus = GetWIS() * 2 + GetCHA();
+		float bonus_damage = value_BaseEffect * (damageBonus / 1000.0f);
+		value += bonus_damage;
+		value_BaseEffect += bonus_damage;
+	}
+
 	// Instant Heals
 	if(spells[spell_id].buffduration < 1) {
 
 		chance += itembonuses.CriticalHealChance + spellbonuses.CriticalHealChance + aabonuses.CriticalHealChance;
 
 		chance += target->GetFocusIncoming(focusFcHealPctCritIncoming, SE_FcHealPctCritIncoming, this, spell_id);
+
+		if (IsClient()) {
+			int dex_bonus = GetDEX() * 8;
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+			int wis_bonus = GetWIS() * 4;
+			if (wis_bonus > 255) {
+				wis_bonus = 255 + ((wis_bonus - 255) / 5);
+			}
+			chance += (dex_bonus + wis_bonus) / 8900.0f;
+		}
 
 		if (spellbonuses.CriticalHealDecay)
 			chance += GetDecayEffectValue(spell_id, SE_CriticalHealDecay);
@@ -293,6 +341,7 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			Critical = true;
 			modifier = 2; //At present time no critical heal amount modifier SPA exists.
 		}
+
 
 		value *= modifier;
 		value += GetFocusEffect(focusFcHealAmtCrit, spell_id) * modifier;
@@ -325,6 +374,17 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 		chance = itembonuses.CriticalHealOverTime + spellbonuses.CriticalHealOverTime + aabonuses.CriticalHealOverTime;
 
 		chance += target->GetFocusIncoming(focusFcHealPctCritIncoming, SE_FcHealPctCritIncoming, this, spell_id);
+
+		if (IsClient()) {
+			int dex_bonus = GetDEX() * 8;
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+			int wis_bonus = GetWIS() * 4;
+			if (wis_bonus > 255) {
+				wis_bonus = 255 + ((wis_bonus - 255) / 5);
+			}
+			chance += (dex_bonus + wis_bonus) / 8900.0f;
+		}
 
 		if (spellbonuses.CriticalRegenDecay)
 			chance += GetDecayEffectValue(spell_id, SE_CriticalRegenDecay);
@@ -393,6 +453,9 @@ int32 Mob::GetActSpellDuration(uint16 spell_id, int32 duration)
 {
 	int increase = 100;
 	increase += GetFocusEffect(focusSpellDuration, spell_id);
+	if (IsClient()) {
+		increase += GetCHA() / 10;
+	}
 	int tic_inc = 0;
 	tic_inc = GetFocusEffect(focusSpellDurByTic, spell_id);
 
@@ -422,8 +485,21 @@ int32 Client::GetActSpellCasttime(uint16 spell_id, int32 casttime)
 
 	//LIVE AA SpellCastingDeftness, QuickBuff, QuickSummoning, QuickEvacuation, QuickDamage
 
+	int agi = GetAGI();
+	if (agi > 255) {
+		agi = 255 + (agi - 255) / 4;
+	}
+	if (agi > 500) {
+		agi = 500;
+	}
+	agi = agi / 10;
+
+	cast_reducer += agi;
+
 	if (cast_reducer > RuleI(Spells, MaxCastTimeReduction))
 		cast_reducer = RuleI(Spells, MaxCastTimeReduction);
+
+	
 
 	casttime = (casttime*(100 - cast_reducer)/100);
 

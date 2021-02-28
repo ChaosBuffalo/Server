@@ -212,14 +212,14 @@ public:
 	virtual void DoRiposte(Mob* defender);
 	void ApplyMeleeDamageMods(uint16 skill, int &damage, Mob * defender = nullptr, ExtraAttackOptions *opts = nullptr);
 	int ACSum(bool skip_caps = false);
-	inline int GetDisplayAC() { return 1000 * (ACSum(true) + compute_defense()) / 847; }
+	inline virtual int GetDisplayAC() { return 1000 * (ACSum(true) + compute_defense()) / 847; }
 	int offense(EQ::skills::SkillType skill);
 	int GetBestMeleeSkill();
 	void CalcAC() { mitigation_ac = ACSum(); }
 	int GetACSoftcap();
 	double GetSoftcapReturns();
 	int GetClassRaceACBonus();
-	inline int GetMitigationAC() { return mitigation_ac; }
+	inline virtual int GetMitigationAC() { return mitigation_ac; }
 	void MeleeMitigation(Mob *attacker, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
 	double RollD20(int offense, int mitigation); // CALL THIS FROM THE DEFENDER
 	bool CombatRange(Mob* other, float fixed_size_mod = 1.0, bool aeRampage = false);
@@ -444,12 +444,12 @@ public:
 	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQ::skills::SkillType attack_skill) = 0;
 	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQ::skills::SkillType attack_skill,
 		bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None) = 0;
-	inline virtual void SetHP(int32 hp) { if (hp >= max_hp) current_hp = max_hp; else current_hp = hp;}
+	inline virtual void SetHP(int32 hp) { if (hp >= GetMaxHP()) current_hp = GetMaxHP(); else current_hp = hp;}
 	bool ChangeHP(Mob* other, int32 amount, uint16 spell_id = 0, int8 buffslot = -1, bool iBuffTic = false);
 	inline void SetOOCRegen(int32 newoocregen) {ooc_regen = newoocregen;}
 	virtual void Heal();
 	virtual void HealDamage(uint32 ammount, Mob* caster = nullptr, uint16 spell_id = SPELL_UNKNOWN);
-	virtual void SetMaxHP() { current_hp = max_hp; }
+	virtual void SetMaxHP() { current_hp = GetMaxHP(); }
 	virtual inline uint16 GetBaseRace() const { return base_race; }
 	virtual inline uint8 GetBaseGender() const { return base_gender; }
 	virtual uint16 GetFactionRace();
@@ -497,8 +497,8 @@ public:
 	inline Mob* GetTarget() const { return target; }
 	virtual void SetTarget(Mob* mob);
 	inline bool HasTargetReflection() const { return (target && target != this && target->target == this); }
-	virtual inline float GetHPRatio() const { return max_hp == 0 ? 0 : ((float) current_hp / max_hp * 100); }
-	virtual inline int GetIntHPRatio() const { return max_hp == 0 ? 0 : static_cast<int>(GetHPRatio()); }
+	virtual inline float GetHPRatio() const { return GetMaxHP() == 0 ? 0 : ((float) current_hp / GetMaxHP() * 100); }
+	virtual inline int GetIntHPRatio() const { return GetMaxHP() == 0 ? 0 : static_cast<int>(GetHPRatio()); }
 	inline int32 GetAC() const { return AC; }
 	inline virtual int32 GetATK() const { return ATK + itembonuses.ATK + spellbonuses.ATK; }
 	inline virtual int32 GetATKBonus() const { return itembonuses.ATK + spellbonuses.ATK; }
@@ -548,7 +548,7 @@ public:
 	inline virtual int32 GetMaxFR() const { return 255; }
 	inline virtual int32 GetDelayDeath() const { return 0; }
 	inline int32 GetHP() const { return current_hp; }
-	inline int32 GetMaxHP() const { return max_hp; }
+	inline virtual int32 GetMaxHP() const { return max_hp; }
 	virtual int32 CalcMaxHP();
 	inline virtual int32 GetMaxMana() const { return max_mana; }
 	inline int32 GetMana() const { return current_mana; }

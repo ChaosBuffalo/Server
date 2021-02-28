@@ -1345,9 +1345,9 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 	if (IsClient()) {
 
 		// delay to allow the client to catch up on buff states
-		if (max_hp != last_max_hp) {
+		if (GetMaxHP() != last_max_hp) {
 
-			last_max_hp = max_hp;
+			last_max_hp = GetMaxHP();
 			CastToClient()->hp_self_update_throttle_timer.Trigger();
 
 			return;
@@ -1363,7 +1363,7 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 					"Mob::SendHPUpdate :: Update HP of self (%s) HP: %i/%i last: %i/%i skip_self: %s",
 					this->GetCleanName(),
 					current_hp,
-					max_hp,
+					GetMaxHP(),
 					last_hp,
 					last_max_hp,
 					(skip_self ? "true" : "false")

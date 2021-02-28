@@ -530,6 +530,22 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 	return false;
 }
 
+
+int Client::CBGetACSoftcap()
+{
+	// from test server Resources/ACMitigation.txt
+	static int war_softcaps[] = {
+		312, 314, 316, 318, 320, 322, 324, 326, 328, 330, 332, 334, 336, 338, 340, 342, 344, 346, 348, 350, 352,
+		354, 356, 358, 360, 362, 364, 366, 368, 370, 372, 374, 376, 378, 380, 382, 384, 386, 388, 390, 392, 394,
+		396, 398, 400, 402, 404, 406, 408, 410, 412, 414, 416, 418, 420, 422, 424, 426, 428, 430, 432, 434, 436,
+		438, 440, 442, 444, 446, 448, 450, 452, 454, 456, 458, 460, 462, 464, 466, 468, 470, 472, 474, 476, 478,
+		480, 482, 484, 486, 488, 490, 492, 494, 496, 498, 500, 502, 504, 506, 508, 510, 512, 514, 516, 518, 520
+	};
+
+	int level = std::min(105, static_cast<int>(GetLevel())) - 1;
+	return war_softcaps[level];
+}
+
 int Mob::GetACSoftcap()
 {
 	// from test server Resources/ACMitigation.txt
@@ -590,7 +606,6 @@ int Mob::GetACSoftcap()
 	};
 
 	int level = std::min(105, static_cast<int>(GetLevel())) - 1;
-
 	switch (GetClass()) {
 	case WARRIOR:
 		return war_softcaps[level];
@@ -651,6 +666,13 @@ double Mob::GetSoftcapReturns()
 	default:
 		return 0.3;
 	}
+}
+
+double Client::CBGetSoftcapReturns()
+{
+	// These are based on the dev post, they seem to be correct for every level
+	// AKA no more hard caps
+	return 0.35;
 }
 
 int Mob::GetClassRaceACBonus()
@@ -780,6 +802,67 @@ int Mob::GetClassRaceACBonus()
 	return ac_bonus;
 }
 
+int Client::CBACSum(bool skip_caps)
+{
+	int ac = 0; // this should be base AC whenever shrouds come around
+	ac += itembonuses.AC; // items + food + tribute
+	int shield_ac = 0;
+	if (HasShieldEquiped() && IsClient()) {
+		auto client = CastToClient();
+		auto inst = client->GetInv().GetItem(EQ::invslot::slotSecondary);
+		if (inst) {
+			if (inst->GetItemRecommendedLevel(true) <= GetLevel())
+				shield_ac = inst->GetItemArmorClass(true);
+			else
+				shield_ac = client->CalcRecommendedLevelBonus(GetLevel(), inst->GetItemRecommendedLevel(true), inst->GetItemArmorClass(true));
+		}
+		shield_ac += client->GetHeroicSTR() / 10;
+		shield_ac += client->GetSTR() / 10;
+	}
+	// EQ math
+	ac = (ac * 4) / 3;
+	// anti-twink
+	if (!skip_caps && IsClient() && GetLevel() < RuleI(Combat, LevelToStopACTwinkControl))
+		ac = std::min(ac, 25 + 6 * GetLevel());
+	ac = std::max(0, ac + GetClassRaceACBonus());
+
+	auto spell_aa_ac = aabonuses.AC + spellbonuses.AC;
+	if (EQ::ValueWithin(static_cast<int>(GetClass()), NECROMANCER, ENCHANTER))
+		ac += GetSkill(EQ::skills::SkillDefense) / 2 + spell_aa_ac / 3;
+	else
+		ac += GetSkill(EQ::skills::SkillDefense) / 3 + spell_aa_ac / 4;
+	
+
+	if (GetAGI() >= 10)
+		ac += GetAGI() / 5;
+	if (ac < 0)
+		ac = 0;
+
+	if (!skip_caps && (IsClient()
+#ifdef BOTS
+		|| IsBot()
+#endif
+		)) {
+		auto softcap = CBGetACSoftcap();
+		auto returns = CBGetSoftcapReturns();
+		int total_aclimitmod = aabonuses.CombatStability + itembonuses.CombatStability + spellbonuses.CombatStability;
+		if (total_aclimitmod)
+			softcap = (softcap * (100 + total_aclimitmod)) / 100;
+		softcap += shield_ac;
+		if (ac > softcap) {
+			auto over_cap = ac - softcap;
+			ac = softcap + (over_cap * returns);
+		}
+		LogCombatDetail("ACSum ac [{}] softcap [{}] returns [{}]", ac, softcap, returns);
+	}
+	else {
+		LogCombatDetail("ACSum ac [{}]", ac);
+	}
+
+	return ac;
+}
+
+
 int Mob::ACSum(bool skip_caps)
 {
 	int ac = 0; // this should be base AC whenever shrouds come around
@@ -907,8 +990,8 @@ int Mob::offense(EQ::skills::SkillType skill)
 			break;
 	}
 
-	if (stat_bonus >= 75)
-		offense += (2 * stat_bonus - 150) / 3;
+	if (stat_bonus >= 10)
+		offense += (2 * stat_bonus - 20) / 3;
 
 	offense += GetATK();
 	return offense;
@@ -3923,7 +4006,7 @@ void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
 //proc chance includes proc bonus
 float Mob::GetProcChances(float ProcBonus, uint16 hand)
 {
-	int mydex = GetDEX();
+	int mydex = GetDEX() * 10;
 	float ProcChance = 0.0f;
 
 	uint32 weapon_speed = GetWeaponSpeedbyHand(hand);
@@ -3949,7 +4032,7 @@ float Mob::GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 h
 	if (!on)
 		return ProcChance;
 
-	int myagi = on->GetAGI();
+	int myagi = on->GetAGI() * 10;
 	ProcBonus = 0;
 	ProcChance = 0;
 
@@ -4365,7 +4448,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 	// a lot of good info: http://giline.versus.jp/shiden/damage_e.htm, http://giline.versus.jp/shiden/su.htm
 
 	// We either require an innate crit chance or some SPA 169 to crit
-	bool innate_crit = false;
+	bool innate_crit = true;
 	int crit_chance = GetCriticalChanceBonus(hit.skill);
 	if ((GetClass() == WARRIOR || GetClass() == BERSERKER) && GetLevel() >= 12)
 		innate_crit = true;
@@ -4385,14 +4468,18 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			difficulty = RuleI(Combat, MeleeCritDifficulty);
 		int roll = zone->random.Int(1, difficulty);
 
-		int dex_bonus = GetDEX();
+		int dex_bonus = GetDEX() * 8;
 		if (dex_bonus > 255)
 			dex_bonus = 255 + ((dex_bonus - 255) / 5);
-		dex_bonus += 45; // chances did not match live without a small boost
+		int str_bonus = GetSTR() * 4;
+		if (str_bonus > 255) {
+			str_bonus = 255 + ((str_bonus - 255) / 5);
+		}
+		dex_bonus += str_bonus;
 
 						 // so if we have an innate crit we have a better chance, except for ber throwing
-		if (!innate_crit || (GetClass() == BERSERKER && hit.skill == EQ::skills::SkillThrowing))
-			dex_bonus = dex_bonus * 3 / 5;
+		/*if (!innate_crit || (GetClass() == BERSERKER && hit.skill == EQ::skills::SkillThrowing))
+			dex_bonus = dex_bonus * 3 / 5;*/
 
 		if (crit_chance)
 			dex_bonus += dex_bonus * crit_chance / 100;
@@ -4602,6 +4689,9 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 		                defender->aabonuses.MeleeMitigationEffect);
 	}
 
+	if (IsClient()) {
+		dmgbonusmod += (GetSTR() * 2 + GetCHA()) / 10;
+	}
 	damage += damage * dmgbonusmod / 100;
 }
 

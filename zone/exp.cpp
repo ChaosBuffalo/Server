@@ -277,7 +277,7 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 	float percentToAAXp = (float)m_epp.perAA / 100;
 
 	// Normalize the amount of AA XP we earned for this kill.
-	add_aaxp = percentToAAXp * (xpPerAA / (whiteConKillsPerAA / colorModifier));
+	add_aaxp = (xpPerAA / (whiteConKillsPerAA / colorModifier));
 }
 
 void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp)
@@ -426,10 +426,8 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 	if (!resexp)
 	{
 		//figure out how much of this goes to AAs
-		add_aaxp = add_exp * m_epp.perAA / 100;
+		add_aaxp = add_exp;
 
-		//take that amount away from regular exp
-		add_exp -= add_aaxp;
 
 		float totalmod = 1.0;
 		float zemmod = 1.0;
@@ -497,7 +495,7 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	uint32 aaexp = 0;
 
 	if (m_epp.perAA<0 || m_epp.perAA>100)
-		m_epp.perAA=0;	// stop exploit with sanity check
+		m_epp.perAA=100;	// stop exploit with sanity check
 
 	// Calculate regular XP
 	CalculateExp(in_add_exp, exp, aaexp, conlevel, resexp);
@@ -532,12 +530,12 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 		aaexp = had_aaexp;	//watch for wrap
 	}
 
-	// AA Sanity Checking for players who set aa exp and deleveled below allowed aa level.
-	if (GetLevel() <= 50 && m_epp.perAA > 0) {
-		Message(Chat::Yellow, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
-		aaexp = 0;
-		m_epp.perAA = 0;
-	}
+	//// AA Sanity Checking for players who set aa exp and deleveled below allowed aa level.
+	//if (GetLevel() <= 50 && m_epp.perAA > 0) {
+	//	Message(Chat::Yellow, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
+	//	aaexp = 0;
+	//	m_epp.perAA = 0;
+	//}
 
 	// Now update our character's normal and AA xp
 	SetEXP(exp, aaexp, resexp);
@@ -768,10 +766,15 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 	m_pp.exp = set_exp;
 	m_pp.expAA = set_aaxp;
 
-	if (GetLevel() < 51) {
-		m_epp.perAA = 0;	// turn off aa exp if they drop below 51
-	} else
-		SendAlternateAdvancementStats();	//otherwise, send them an AA update
+	//if (GetLevel() < 51) {
+	//	m_epp.perAA = 0;        // turn off aa exp if they drop below 51
+	//}
+	//else
+	//
+	//SendAlternateAdvancementStats();        //otherwise, send them an AA update
+
+
+	SendAlternateAdvancementStats();	//otherwise, send them an AA update
 
 	//send the expdata in any case so the xp bar isnt stuck after leveling
 	uint32 tmpxp1 = GetEXPForLevel(GetLevel()+1);

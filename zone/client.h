@@ -431,12 +431,21 @@ public:
 	inline uint32 GetBindInstanceID(uint32 index = 0) const { return m_pp.binds[index].instance_id; }
 	int32 CalcMaxMana();
 	int32 CalcBaseMana();
-	int32 CalcCBBaseMana();
-	int32 CalcCBMaxMana();
+	int32 CBCalcBaseMana();
+	int32 CBCalcMaxMana();
+	int32 CBCalcBaseHP();
+	int32 CBCalcMaxHp();
+	void CBCalcAC() { cb_mitigation_ac = CBACSum(); };
+	inline virtual int GetDisplayAC() { return 1000 * (CBACSum(true) + compute_defense()) / 847; }
+	int CBACSum(bool skip_caps = false);
+	int CBGetACSoftcap();
+	double CBGetSoftcapReturns();
+
+	inline virtual int GetMitigationAC() override { return cb_mitigation_ac; };
 
 	void HandleTributeSyncingOfStats();
 
-	void HandleCBStatCorrections();
+	void CBHandleStatCorrections();
 
 	const int32& SetMana(int32 amount);
 	int32 CalcManaRegenCap();
@@ -557,7 +566,9 @@ public:
 
 	inline virtual int32 GetDelayDeath() const { return aabonuses.DelayDeath + spellbonuses.DelayDeath + itembonuses.DelayDeath + 11; }
 
-	inline virtual int32 GetMaxMana() const { return cb_max_mana - cb_max_mana_minus_tribute; }
+	inline virtual int32 GetMaxMana() const override { return cb_max_mana - cb_max_mana_minus_tribute; }
+
+	inline virtual int32 GetMaxHP() const override { return cb_max_hp - cb_max_hp_minus_tribute; }
 
 	int32 GetActSpellCost(uint16 spell_id, int32);
 	int32 GetActSpellCasttime(uint16 spell_id, int32);
@@ -1606,7 +1617,11 @@ protected:
 	Mob* bind_sight_target;
 	int cb_max_mana;
 	int cb_max_mana_minus_tribute;
+	int cb_max_hp;
+	int cb_max_hp_minus_tribute;
 	int cb_early_sync_count;
+	int cb_mitigation_ac;
+	int cb_mitigation_ac_tribute;
 	bool firstSync;
 
 	glm::vec4 m_AutoAttackPosition;

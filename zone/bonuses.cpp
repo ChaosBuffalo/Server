@@ -73,9 +73,11 @@ void NPC::CalcBonuses()
 	Mob::CalcBonuses();
 }
 
-void Client::HandleCBStatCorrections()
+void Client::CBHandleStatCorrections()
 {
-	CalcCBMaxMana();
+	CBCalcMaxMana();
+	CBCalcMaxHp();
+	CBCalcAC();
 	HandleTributeSyncingOfStats();
 }
 
@@ -114,7 +116,7 @@ void Client::CalcBonuses()
 	CalcMaxMana();
 	CalcMaxEndurance();
 
-	HandleCBStatCorrections();
+	CBHandleStatCorrections();
 	//We need to calc item bonuses again cause tribute items have been modified in the stat correction step
 	memset(&itembonuses, 0, sizeof(StatBonuses));
 	CalcItemBonuses(&itembonuses);
@@ -353,8 +355,10 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 		}
 
 		// FatherNitwit: New style haste, shields, and regens
-		if (newbon->haste < (int32)item->Haste) {
-			newbon->haste = item->Haste;
+
+		// more haste cuz its cool (slash also theres haste on the tribute)
+		if (newbon->haste < 60) {
+			newbon->haste += item->Haste;
 		}
 		if (item->Regen > 0)
 			newbon->HPRegen += item->Regen;
