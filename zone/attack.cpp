@@ -990,6 +990,36 @@ int Mob::offense(EQ::skills::SkillType skill)
 			break;
 	}
 
+	if (stat_bonus >= 75)
+		offense += (2 * stat_bonus - 150) / 3;
+
+	offense += GetATK();
+	return offense;
+}
+
+int Client::offense(EQ::skills::SkillType skill)
+{
+	int offense = GetSkill(skill);
+	int stat_bonus = GetSTR();
+
+	switch (skill) {
+	case EQ::skills::SkillArchery:
+	case EQ::skills::SkillThrowing:
+		stat_bonus = GetDEX();
+		break;
+
+		// Mobs with no weapons default to H2H.
+		// Since H2H is capped at 100 for many many classes,
+		// lets not handicap mobs based on not spawning with a
+		// weapon.
+		//
+		// Maybe we tweak this if Disarm is actually implemented.
+
+	case EQ::skills::SkillHandtoHand:
+		offense = GetBestMeleeSkill();
+		break;
+	}
+
 	if (stat_bonus >= 10)
 		offense += (2 * stat_bonus - 20) / 3;
 
@@ -3947,7 +3977,7 @@ void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
 	else
 		acthealed = amount;
 
-	if (acthealed > 100) {
+	if (acthealed > 0) {
 		if (caster) {
 			if (IsBuffSpell(spell_id)) { // hots
 										 // message to caster
@@ -4003,10 +4033,53 @@ void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
 	}
 }
 
+float Client::GetProcChances(float ProcBonus, uint16 hand)
+{
+	int mydex = GetDEX() * 10;
+	float ProcChance = 0.0f;
+
+	uint32 weapon_speed = GetWeaponSpeedbyHand(hand);
+
+	if (RuleB(Combat, AdjustProcPerMinute)) {
+		ProcChance = (static_cast<float>(weapon_speed) *
+			RuleR(Combat, AvgProcsPerMinute) / 60000.0f); // compensate for weapon_speed being in ms
+		ProcBonus += static_cast<float>(mydex) * RuleR(Combat, ProcPerMinDexContrib);
+		ProcChance += ProcChance * ProcBonus / 100.0f;
+	}
+	else {
+		ProcChance = RuleR(Combat, BaseProcChance) +
+			static_cast<float>(mydex) / RuleR(Combat, ProcDexDivideBy);
+		ProcChance += ProcChance * ProcBonus / 100.0f;
+	}
+
+	LogCombat("Proc chance [{}] ([{}] from bonuses)", ProcChance, ProcBonus);
+	return ProcChance;
+}
+
+float Client::GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 hand, Mob* on) {
+
+	if (!on)
+		return ProcChance;
+
+	int myagi = on->GetAGI() * 10;
+	ProcBonus = 0;
+	ProcChance = 0;
+
+	uint32 weapon_speed = GetWeaponSpeedbyHand(hand);
+
+	ProcChance = (static_cast<float>(weapon_speed) * RuleR(Combat, AvgDefProcsPerMinute) / 60000.0f); // compensate for weapon_speed being in ms
+	ProcBonus += static_cast<float>(myagi) * RuleR(Combat, DefProcPerMinAgiContrib) / 100.0f;
+	ProcChance = ProcChance + (ProcChance * ProcBonus);
+
+	LogCombat("Defensive Proc chance [{}] ([{}] from bonuses)", ProcChance, ProcBonus);
+	return ProcChance;
+}
+
+
 //proc chance includes proc bonus
 float Mob::GetProcChances(float ProcBonus, uint16 hand)
 {
-	int mydex = GetDEX() * 10;
+	int mydex = GetDEX();
 	float ProcChance = 0.0f;
 
 	uint32 weapon_speed = GetWeaponSpeedbyHand(hand);
@@ -4032,7 +4105,7 @@ float Mob::GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 h
 	if (!on)
 		return ProcChance;
 
-	int myagi = on->GetAGI() * 10;
+	int myagi = on->GetAGI();
 	ProcBonus = 0;
 	ProcChance = 0;
 
@@ -4690,7 +4763,7 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 	}
 
 	if (IsClient()) {
-		dmgbonusmod += (GetSTR() * 2 + GetCHA()) / 10;
+		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetDEX()) / 20;
 	}
 	damage += damage * dmgbonusmod / 100;
 }

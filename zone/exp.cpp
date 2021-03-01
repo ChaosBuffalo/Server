@@ -1027,15 +1027,15 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 		}
 	}
 
-	float groupmod;
-	if (membercount > 1 && membercount < 6)
-		groupmod = 1 + .2*(membercount - 1); //2members=1.2exp, 3=1.4, 4=1.6, 5=1.8
-	else if (membercount == 6)
-		groupmod = 2.16;
-	else
-		groupmod = 1.0;
-	if(membercount > 1 &&  membercount <= 6)
-		groupexp += (uint32)((float)exp * groupmod * (RuleR(Character, GroupExpMultiplier)));
+	//float groupmod;
+	//if (membercount > 1 && membercount < 6)
+	//	groupmod = 1 + .2*(membercount - 1); //2members=1.2exp, 3=1.4, 4=1.6, 5=1.8
+	//else if (membercount == 6)
+	//	groupmod = 2.16;
+	//else
+	//	groupmod = 1.0;
+	//if(membercount > 1 &&  membercount <= 6)
+	//	groupexp += (uint32)((float)exp * groupmod * (RuleR(Character, GroupExpMultiplier)));
 
 	int conlevel = Mob::GetLevelCon(maxlevel, other->GetLevel());
 	if(conlevel == CON_GRAY)
@@ -1055,7 +1055,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 					maxdiff = -5;
 			if (diff >= (maxdiff)) { /*Instead of person who killed the mob, the person who has the highest level in the group*/
 				uint32 tmp = (cmember->GetLevel()+3) * (cmember->GetLevel()+3) * 75 * 35 / 10;
-				uint32 tmp2 = groupexp / membercount;
+				uint32 tmp2 = groupexp / 2;
 				cmember->AddEXP( tmp < tmp2 ? tmp : tmp2, conlevel );
 			}
 		}

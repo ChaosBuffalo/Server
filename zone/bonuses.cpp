@@ -78,7 +78,7 @@ void Client::CBHandleStatCorrections()
 	CBCalcMaxMana();
 	CBCalcMaxHp();
 	CBCalcAC();
-	HandleTributeSyncingOfStats();
+	CBHandleTributeSyncingOfStats();
 }
 
 void Client::CalcBonuses()

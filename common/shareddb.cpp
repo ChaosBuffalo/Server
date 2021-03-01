@@ -1542,7 +1542,7 @@ bool SharedDatabase::UpdateOrphanedCommandSettings(const std::vector<std::string
 }
 
 bool SharedDatabase::LoadSkillCaps(const std::string &prefix) {
-	skill_caps_mmf.reset(nullptr);
+	//skill_caps_mmf.reset(nullptr);
 
 	uint32 class_count = PLAYER_CLASS_COUNT;
 	uint32 skill_count = EQ::skills::HIGHEST_SKILL + 1;
@@ -1578,6 +1578,7 @@ void SharedDatabase::LoadSkillCaps(void *data) {
         return;
 	}
 
+	LogInfo("loading skill caps from database found: {}", results.RowCount());
     for(auto row = results.begin(); row != results.end(); ++row) {
         uint8 skillID = atoi(row[0]);
         uint8 class_ = atoi(row[1]) - 1;

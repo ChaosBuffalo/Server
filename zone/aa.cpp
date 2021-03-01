@@ -923,7 +923,7 @@ void Client::SendAlternateAdvancementStats() {
 	AltAdvStats_Struct *aps = (AltAdvStats_Struct *)outapp->pBuffer;
 	aps->experience = (uint32)(((float)330.0f * (float)m_pp.expAA) / (float)GetRequiredAAExperience());
 	aps->unspent = m_pp.aapoints;
-	aps->percentage = m_epp.perAA;
+	aps->percentage = 0;
 	QueuePacket(outapp);
 	safe_delete(outapp);
 }

@@ -213,7 +213,7 @@ public:
 	void ApplyMeleeDamageMods(uint16 skill, int &damage, Mob * defender = nullptr, ExtraAttackOptions *opts = nullptr);
 	int ACSum(bool skip_caps = false);
 	inline virtual int GetDisplayAC() { return 1000 * (ACSum(true) + compute_defense()) / 847; }
-	int offense(EQ::skills::SkillType skill);
+	virtual int offense(EQ::skills::SkillType skill);
 	int GetBestMeleeSkill();
 	void CalcAC() { mitigation_ac = ACSum(); }
 	int GetACSoftcap();

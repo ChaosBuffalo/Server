@@ -443,7 +443,7 @@ public:
 
 	inline virtual int GetMitigationAC() override { return cb_mitigation_ac; };
 
-	void HandleTributeSyncingOfStats();
+	void CBHandleTributeSyncingOfStats();
 
 	void CBHandleStatCorrections();
 
@@ -570,6 +570,9 @@ public:
 
 	inline virtual int32 GetMaxHP() const override { return cb_max_hp - cb_max_hp_minus_tribute; }
 
+	virtual float GetProcChances(float ProcBonus, uint16 hand = EQ::invslot::slotPrimary) override;
+	virtual float GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 hand = EQ::invslot::slotPrimary, Mob *on = nullptr) override;
+
 	int32 GetActSpellCost(uint16 spell_id, int32);
 	int32 GetActSpellCasttime(uint16 spell_id, int32);
 	virtual bool CheckFizzle(uint16 spell_id);
@@ -631,7 +634,7 @@ public:
 	void SetEbonCrystals(uint32 value);
 	void AddCrystals(uint32 Radiant, uint32 Ebon);
 	void SendCrystalCounts();
-
+	virtual int offense(EQ::skills::SkillType skill) override;
 	uint32 GetExperienceForKill(Mob *against);
 	void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false);
 	uint32 CalcEXP(uint8 conlevel = 0xFF);

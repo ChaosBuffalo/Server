@@ -1815,7 +1815,7 @@ void Client::DoManaRegen() {
 		return;
 
 	if (GetMana() < GetMaxMana() && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
-		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
+		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, 5);
 
 	SetMana(GetMana() + CalcManaRegen());
 	CheckManaEndUpdate();

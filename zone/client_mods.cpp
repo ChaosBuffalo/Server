@@ -604,7 +604,7 @@ int32 Client::CalcMaxMana()
 	return max_mana;
 }
 
-void Client::HandleTributeSyncingOfStats()
+void Client::CBHandleTributeSyncingOfStats()
 {
 	const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
 	if (inst == nullptr)
@@ -635,6 +635,7 @@ void Client::HandleTributeSyncingOfStats()
 	ToggleTribute(true);
 	PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN, copy, false);
 	SendItemPacket(EQ::invslot::TRIBUTE_BEGIN, &copy, ItemPacketTributeItem);
+	safe_delete(inst);
 }
 
 int32 Client::CBCalcMaxMana()
