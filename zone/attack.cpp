@@ -3901,6 +3901,25 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 					attacker->CastToClient()->QueuePacket(outapp, true, CLIENT_CONNECTED, filter);
 				}
 			}
+			// Lets send bot messages too
+			else if (attacker && attacker->IsBot()) {
+				if ((spell_id != SPELL_UNKNOWN || FromDamageShield) && damage > 0) {
+					//special crap for spell damage, looks hackish to me
+					char val1[20] = { 0 };
+					if (!FromDamageShield) {
+						entity_list.MessageCloseString(
+							this, /* Sender */
+							true, /* Skip Sender */
+							RuleI(Range, SpellMessages),
+							Chat::NonMelee, /* 283 */
+							HIT_NON_MELEE, /* %1 hit %2 for %3 points of non-melee damage. */
+							attacker->GetCleanName(), /* Message1 */
+							GetCleanName(), /* Message2 */
+							ConvertArray(damage, val1) /* Message3 */
+						);
+					}
+				}
+			}
 			skip = attacker;
 		}
 
@@ -3943,11 +3962,13 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 	else {
 		//else, it is a buff tic...
 		// So we can see our dot dmg like live shows it.
-		if (spell_id != SPELL_UNKNOWN && damage > 0 && attacker && attacker != this && attacker->IsClient()) {
+		if (spell_id != SPELL_UNKNOWN && damage > 0 && attacker && attacker != this && (attacker->IsClient() || attacker->IsBot())) {
 			//might filter on (attack_skill>200 && attack_skill<250), but I dont think we need it
-			attacker->FilteredMessageString(attacker, Chat::DotDamage, FilterDOT,
-				YOUR_HIT_DOT, GetCleanName(), itoa(damage), spells[spell_id].name);
+			if (attacker->IsClient()) {
+				attacker->FilteredMessageString(attacker, Chat::DotDamage, FilterDOT,
+					YOUR_HIT_DOT, GetCleanName(), itoa(damage), spells[spell_id].name);
 
+			}
 			/* older clients don't have the below String ID, but it will be filtered */
 			entity_list.FilteredMessageCloseString(
 				attacker, /* Sender */
@@ -4521,7 +4542,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 	// a lot of good info: http://giline.versus.jp/shiden/damage_e.htm, http://giline.versus.jp/shiden/su.htm
 
 	// We either require an innate crit chance or some SPA 169 to crit
-	bool innate_crit = true;
+	bool innate_crit = IsClient() || IsBot();
 	int crit_chance = GetCriticalChanceBonus(hit.skill);
 	if ((GetClass() == WARRIOR || GetClass() == BERSERKER) && GetLevel() >= 12)
 		innate_crit = true;
@@ -4541,14 +4562,23 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			difficulty = RuleI(Combat, MeleeCritDifficulty);
 		int roll = zone->random.Int(1, difficulty);
 
-		int dex_bonus = GetDEX() * 8;
-		if (dex_bonus > 255)
-			dex_bonus = 255 + ((dex_bonus - 255) / 5);
-		int str_bonus = GetSTR() * 4;
-		if (str_bonus > 255) {
-			str_bonus = 255 + ((str_bonus - 255) / 5);
+		int dex_bonus;
+		if (IsClient()) {
+			dex_bonus = GetDEX() * 8;
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+			int str_bonus = GetSTR() * 4;
+			if (str_bonus > 255) {
+				str_bonus = 255 + ((str_bonus - 255) / 5);
+			}
+			dex_bonus += str_bonus;
 		}
-		dex_bonus += str_bonus;
+		else {
+			dex_bonus = GetDEX();
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		}
+		
 
 						 // so if we have an innate crit we have a better chance, except for ber throwing
 		/*if (!innate_crit || (GetClass() == BERSERKER && hit.skill == EQ::skills::SkillThrowing))
@@ -5337,10 +5367,10 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		switch (hit.skill) {
 		case EQ::skills::SkillThrowing:
 		case EQ::skills::SkillArchery:
-			extra = CastToClient()->GetHeroicDEX() / 10;
+			extra = GetDEX() / 10 + GetCHA() / 20 + CastToClient()->GetHeroicDEX() / 10;
 			break;
 		default:
-			extra = CastToClient()->GetHeroicSTR() / 10;
+			extra = GetSTR() / 10 + GetCHA() / 20 + CastToClient()->GetHeroicSTR() / 10;
 			break;
 		}
 		hit.damage_done += extra;

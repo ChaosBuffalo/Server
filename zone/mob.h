@@ -1407,6 +1407,7 @@ protected:
 	int16 slow_mitigation; // Allows for a slow mitigation (100 = 100%, 50% = 50%)
 	Timer tic_timer;
 	Timer mana_timer;
+	int64 tic_count;
 
 	//spell casting vars
 	Timer spellend_timer;

@@ -100,14 +100,14 @@ Mob::Mob(
 	attack_timer(2000),
 	attack_dw_timer(2000),
 	ranged_timer(2000),
-	tic_timer(6000),
+	tic_timer(3000),
 	mana_timer(2000),
 	spellend_timer(0),
 	rewind_timer(30000),
 	bindwound_timer(10000),
 	stunned_timer(0),
 	spun_timer(0),
-	bardsong_timer(6000),
+	bardsong_timer(3000),
 	gravity_timer(1000),
 	viral_timer(0),
 	m_FearWalkTarget(-999999.0f, -999999.0f, -999999.0f),
@@ -2565,7 +2565,12 @@ bool Mob::CanThisClassDualWield(void) const {
 bool Mob::CanThisClassDoubleAttack(void) const
 {
 	if(!IsClient()) {
-		return(GetSkill(EQ::skills::SkillDoubleAttack) > 0);
+		if (IsBot()) {
+			return(GetSkill(EQ::skills::SkillDoubleAttack) > 0);
+		}
+		else {
+			return(GetSkill(EQ::skills::SkillDoubleAttack) > 0 && GetLevel() > 20);
+		}
 	} else {
 		if(aabonuses.GiveDoubleAttack || itembonuses.GiveDoubleAttack || spellbonuses.GiveDoubleAttack) {
 			return true;

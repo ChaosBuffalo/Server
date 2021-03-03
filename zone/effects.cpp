@@ -102,7 +102,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 		else if (IsClient() || (IsMerc() && GetClass() == CASTERDPS)) {
 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))){
 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
-				ratio += zone->random.Int(20,70);
+				ratio += zone->random.Int(20,100);
 				Critical = true;
 			}
 		}
@@ -111,6 +111,11 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			ratio += RuleI(Spells, WizCritRatio); //Default is zero
 
 		if (Critical){
+			// make base crit rate add to a 100 so its a multiplier instead of just a equals the same thing
+			ratio += 100;
+			if (ratio < 100) {
+				ratio = 100;
+			}
 
 			value = value_BaseEffect*ratio/100;
 

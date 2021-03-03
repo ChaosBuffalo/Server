@@ -3448,7 +3448,7 @@ snare has both of them negative, yet their range should work the same:
 void Mob::BuffProcess()
 {
 	int buff_count = GetMaxTotalSlots();
-
+	tic_count++;
 	for (int buffs_i = 0; buffs_i < buff_count; ++buffs_i)
 	{
 		if (buffs[buffs_i].spellid != SPELL_UNKNOWN)
@@ -3463,8 +3463,9 @@ void Mob::BuffProcess()
 			    spells[buffs[buffs_i].spellid].buffdurationformula != DF_Aura) {
 				if(!zone->BuffTimersSuspended() || !IsSuspendableSpell(buffs[buffs_i].spellid))
 				{
-					--buffs[buffs_i].ticsremaining;
-
+					if (tic_count % 2 == 0) {
+						--buffs[buffs_i].ticsremaining;
+					}
 					if (buffs[buffs_i].ticsremaining < 0) {
 						LogSpells("Buff [{}] in slot [{}] has expired. Fading", buffs[buffs_i].spellid, buffs_i);
 						BuffFadeBySlot(buffs_i);
