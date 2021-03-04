@@ -1047,7 +1047,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 						bardsong_target_id = GetID();
 					else
 						bardsong_target_id = spell_target->GetID();
-					bardsong_timer.Start(3000);
+					bardsong_timer.Start(2000);
 				}
 				LogSpells("Bard song [{}] started: slot [{}], target id [{}]", bardsong, (int) bardsong_slot, bardsong_target_id);
 				bard_song_mode = true;

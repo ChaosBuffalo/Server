@@ -107,7 +107,7 @@ Mob::Mob(
 	bindwound_timer(10000),
 	stunned_timer(0),
 	spun_timer(0),
-	bardsong_timer(3000),
+	bardsong_timer(2000),
 	gravity_timer(1000),
 	viral_timer(0),
 	m_FearWalkTarget(-999999.0f, -999999.0f, -999999.0f),
