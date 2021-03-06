@@ -485,7 +485,7 @@ int32 Client::GetActSpellCasttime(uint16 spell_id, int32 casttime)
 
 	if (GetLevel() >= 51 && casttime >= 3000 && !BeneficialSpell(spell_id)
 		&& (GetClass() == SHADOWKNIGHT || GetClass() == RANGER
-			|| GetClass() == PALADIN || GetClass() == BEASTLORD ))
+			|| GetClass() == PALADIN || GetClass() == BEASTLORD || GetClass() == BARD ))
 		cast_reducer += (GetLevel()-50)*3;
 
 	//LIVE AA SpellCastingDeftness, QuickBuff, QuickSummoning, QuickEvacuation, QuickDamage

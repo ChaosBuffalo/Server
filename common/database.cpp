@@ -193,8 +193,8 @@ int16 Database::CheckStatus(uint32 account_id)
 	if (row[1] != nullptr)
 		date_diff = atoi(row[1]);
 
-	if (date_diff > 0)
-		return -1;
+	/*if (date_diff > 0)
+		return -1;*/
 
 	return status;
 }
