@@ -459,7 +459,7 @@ int32 Mob::GetActSpellDuration(uint16 spell_id, int32 duration)
 	int increase = 100;
 	increase += GetFocusEffect(focusSpellDuration, spell_id);
 	if (IsClient()) {
-		increase += GetCHA() / 10;
+		increase += (GetCHA() + GetWIS() + GetINT()) / 10;
 	}
 	int tic_inc = 0;
 	tic_inc = GetFocusEffect(focusSpellDurByTic, spell_id);
