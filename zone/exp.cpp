@@ -300,10 +300,9 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 		else if (level > 40) {
 			aaPerLevel = 20;
 		}
-		GetEXPForLevel(level + 1);
 		uint32 xp_for_level = GetEXPForLevel(level + 1) - GetEXPForLevel(level);
-		float ratio = float(add_aaxp) / xp_for_level / aaPerLevel;
-		add_aaxp = xpPerAA * ratio;
+		float ratio = float(add_aaxp) / xp_for_level;
+		add_aaxp = xpPerAA * ratio * aaPerLevel;
 	}
 
 
