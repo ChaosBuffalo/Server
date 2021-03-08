@@ -1120,7 +1120,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					distance_moved = d_x * d_x + d_y * d_y;
 					// if you moved 1 unit, that's 25% off your chance to regain.
 					// if you moved 2, you lose 100% off your chance
-					distancemod = distance_moved * 5;
+					distancemod = distance_moved * 10;
 					channelchance -= distancemod;
 				}
 				else
@@ -1134,9 +1134,9 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 
 			if(!spells[spell_id].uninterruptable && zone->random.Real(0, 100) > channelchance) {
 				LogSpells("Casting of [{}] canceled: interrupted", spell_id);
-				int endCost = zone->random.Int(5, 10);
+				int endCost = zone->random.Int(10, 25);
 				if (IsClient() && didntMove && GetEndurancePercent() > endCost) {
-					SetEndurance(GetEndurance() - (GetEndurance() * (endCost / 100)));
+					SetEndurance(GetEndurance() - int((GetEndurance() * (endCost / 100.0f))));
 				}
 				else {
 					InterruptSpell();
@@ -1445,7 +1445,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 			c->MemorizeSpell(static_cast<uint32>(slot), spell_id, memSpellSpellbar);
 
 			// this tells the client that casting may happen again
-			SetMana(GetMana());
+			c->SetMana(GetMana());
 
 			// skills
 			if (EQ::skills::IsCastingSkill(spells[spell_id].skill)) {

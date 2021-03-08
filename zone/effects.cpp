@@ -70,12 +70,16 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 		int dex_bonus = GetDEX() * 8;
 		if (dex_bonus > 255)
 			dex_bonus = 255 + ((dex_bonus - 255) / 5);
-		int int_bonus = GetINT() * 4;
+		int int_bonus = GetINT() * 3;
 		if (int_bonus > 255) {
 			int_bonus = 255 + ((int_bonus - 255) / 5);
 		}
-		chance += (dex_bonus + int_bonus) / 8900.0f;
-		int damageBonus = GetINT() * 3 + GetCHA() * 2 + GetWIS();
+		int wis_bonus = GetWIS() * 3;
+		if (wis_bonus > 255) {
+			wis_bonus = 255 + ((wis_bonus - 255) / 5);
+		}
+		chance += (dex_bonus + int_bonus + wis_bonus) / 150;
+		int damageBonus = GetINT() * 3 + GetCHA() * 2 + GetWIS() * 3;
 		float bonus_damage = value_BaseEffect * (damageBonus / 2000);
 		value += bonus_damage;
 		value_BaseEffect += bonus_damage;
@@ -208,12 +212,16 @@ int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
 		int dex_bonus = GetDEX() * 8;
 		if (dex_bonus > 255)
 			dex_bonus = 255 + ((dex_bonus - 255) / 5);
-		int int_bonus = GetINT() * 4;
+		int int_bonus = GetINT() * 3;
 		if (int_bonus > 255) {
 			int_bonus = 255 + ((int_bonus - 255) / 5);
 		}
-		chance += (dex_bonus + int_bonus) / 8900.0f;
-		int damageBonus = GetINT() * 3 + GetCHA() * 2 + GetWIS();
+		int wis_bonus = GetWIS() * 3;
+		if (wis_bonus > 255) {
+			wis_bonus = 255 + ((wis_bonus - 255) / 5);
+		}
+		chance += (dex_bonus + int_bonus + wis_bonus) / 100;
+		int damageBonus = GetINT() * 3 + GetCHA() * 2 + GetWIS() * 3;
 		float bonus_damage = value_BaseEffect * (damageBonus / 2000.0f);
 		value += bonus_damage;
 		value_BaseEffect += bonus_damage;
@@ -333,7 +341,7 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			if (wis_bonus > 255) {
 				wis_bonus = 255 + ((wis_bonus - 255) / 5);
 			}
-			chance += (dex_bonus + wis_bonus) / 8900.0f;
+			chance += (dex_bonus + wis_bonus) / 100;
 		}
 
 		if (spellbonuses.CriticalHealDecay)

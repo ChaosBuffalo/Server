@@ -30,6 +30,7 @@
 #include "quest_parser_collection.h"
 #include "lua_parser.h"
 #include "string_ids.h"
+#include <algorithm>
 
 #ifdef BOTS
 #include "bot.h"
@@ -269,15 +270,43 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 	// For this, we ignore the provided value of add_aaxp because it doesn't
 	// apply.  XP per AA is normalized such that there are X white con kills
 	// per AA.
-
-	uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
+	int level = GetLevel();
 	uint32 xpPerAA = RuleI(AA, ExpPerPoint);
+	if (level >= 51) {
+		uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
 
-	float colorModifier = GetConLevelModifierPercent(conlevel);
-	float percentToAAXp = (float)m_epp.perAA / 100;
+		float colorModifier = GetConLevelModifierPercent(conlevel);
+		float percentToAAXp = (float)m_epp.perAA / 100;
 
-	// Normalize the amount of AA XP we earned for this kill.
-	add_aaxp = (xpPerAA / (whiteConKillsPerAA / colorModifier));
+		// Normalize the amount of AA XP we earned for this kill.
+		add_aaxp = (xpPerAA / (whiteConKillsPerAA / colorModifier));
+	}
+	else {
+		int aaPerLevel = level == 1 ? 1 : 2;
+		if (level > 2 && level <= 10) 
+		{
+			aaPerLevel = 3;
+		} else if (level > 10 && level <= 20) 
+		{
+			aaPerLevel = 5;
+		}
+		else if (level > 20 && level <= 30) 
+		{
+			aaPerLevel = 10;
+		}
+		else if (level > 30 && level <= 40) {
+			aaPerLevel = 15;
+		}
+		else if (level > 40) {
+			aaPerLevel = 20;
+		}
+		GetEXPForLevel(level + 1);
+		uint32 xp_for_level = GetEXPForLevel(level + 1) - GetEXPForLevel(level);
+		float ratio = float(add_aaxp) / xp_for_level / aaPerLevel;
+		add_aaxp = xpPerAA * ratio;
+	}
+
+
 }
 
 void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp)
@@ -426,7 +455,7 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 	if (!resexp)
 	{
 		//figure out how much of this goes to AAs
-		add_aaxp = add_exp;
+	
 
 
 		float totalmod = 1.0;
@@ -484,6 +513,7 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 		add_exp *= RuleR(Character, FinalExpMultiplier);
 	}
 
+	add_aaxp = add_exp;
 	add_exp = GetEXP() + add_exp;
 }
 

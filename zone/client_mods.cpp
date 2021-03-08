@@ -731,12 +731,12 @@ int32 Client::CBCalcBaseMana()
 	switch (GetCasterClass()) {
 		case 'I':
 		case 'W':
-			TotalRawStatCount = 12 * Int + 10 * Wis + 5 * Cha;
+			TotalRawStatCount = 7 * Int + 5 * Wis + 3 * Cha;
 			ConvertedWisInt = (((5 * (400 + TotalRawStatCount)) / 2) * 5 * GetLevel() / 400);
 			LogDebug("Client::CalcCBBaseMana() called for [{}] - Raw Weight [{}] Final [{}]", GetName(), TotalRawStatCount, ConvertedWisInt);
 			base_data = database.GetBaseData(GetLevel(), GetClass());
 			if (base_data) {
-				max_m = base_data->base_mana + (ConvertedWisInt * base_data->mana_factor) + (GetHeroicINT() * 12 + GetHeroicWIS() * 10 + GetHeroicCHA() * 5);
+				max_m = base_data->base_mana + (ConvertedWisInt * base_data->mana_factor) + (GetHeroicINT() * 10 + GetHeroicWIS() * 10 + GetHeroicCHA() * 5);
 			}
 			break;
 		case 'N': {
