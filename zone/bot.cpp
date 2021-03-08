@@ -2977,7 +2977,7 @@ void Bot::AI_Process()
 
 //#pragma region ATTACKING FLAG (HATE VALIDATION)
 
-		if (GetAttackingFlag() && tar->CheckAggro(this)) {
+		if (GetAttackingFlag() && CheckAggro(tar)) {
 			SetAttackingFlag(false);
 		}
 

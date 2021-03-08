@@ -2853,6 +2853,18 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 
 		break;
 	}
+	if (IsBot()) {
+		auto botSelf = CastToBot();
+		if (botSelf && botSelf->GetBotOwner()) {
+			auto owner = botSelf->GetBotOwner()->CastToClient();
+			if (owner && !owner->IsDead() && owner->InZone()) {
+				if (!owner->hate_list.IsEntOnHateList(other)) {
+					owner->hate_list.AddEntToHateList(other, 0, 0, false, true);
+					owner->AddAutoXTarget(other); // this was being called on dead/out-of-zone clients
+				}
+			}
+		}
+	}
 #endif //BOTS
 
 	// if other is a merc, add the merc client to the hate list

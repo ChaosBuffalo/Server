@@ -1134,7 +1134,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 
 			if(!spells[spell_id].uninterruptable && zone->random.Real(0, 100) > channelchance) {
 				LogSpells("Casting of [{}] canceled: interrupted", spell_id);
-				int endCost = zone->random.Int(10, 25);
+				int endCost = zone->random.Int(40, 60);
 				if (IsClient() && didntMove && GetEndurancePercent() > endCost) {
 					SetEndurance(GetEndurance() - int((GetEndurance() * (endCost / 100.0f))));
 				}
