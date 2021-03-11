@@ -626,7 +626,7 @@ void Client::CBHandleTributeSyncingOfStats()
 	if (agi > 255){
 		agi = 255 + (agi - 255) / 4;
 	}
-	agi = agi / 10;
+	agi = agi / 5;
 	data.Haste = agi;
 	LogDebug("Client::SyncCBManaToClient() called for [{}] Mana - Base [{}] New [{}] Modifier: [{}]", GetName(), baseMana, newMana, data.Mana);
 	LogDebug("Client::SyncCBManaToClient() called for [{}] HP - Base [{}] New [{}] Modifier: [{}]", GetName(), baseHP, newHP, data.HP);
