@@ -830,7 +830,7 @@ bool EQ::ItemInstance::IsDroppable(bool recurse) const
 		return false;
 	/*if (m_item->FVNoDrop != 0) // not implemented
 		return false;*/
-	if (m_item->NoDrop == 0)
+	if (m_item->NoDrop == 0 && RuleI(World, FVNoDropFlag) == 0)
 		return false;
 
 	if (recurse) {

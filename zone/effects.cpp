@@ -505,7 +505,7 @@ int32 Client::GetActSpellCasttime(uint16 spell_id, int32 casttime)
 	if (agi > 500) {
 		agi = 500;
 	}
-	agi = agi / 10;
+	agi = agi / 5;
 
 	cast_reducer += agi;
 

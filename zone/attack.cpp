@@ -4805,7 +4805,7 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 	}
 
 	if (IsClient()) {
-		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetDEX()) / 20;
+		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetDEX() * 3) / 20;
 	}
 	damage += damage * dmgbonusmod / 100;
 }
@@ -5379,10 +5379,10 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		switch (hit.skill) {
 		case EQ::skills::SkillThrowing:
 		case EQ::skills::SkillArchery:
-			extra = GetDEX() / 10 + GetCHA() / 20 + CastToClient()->GetHeroicDEX() / 10;
+			extra = CastToClient()->GetHeroicDEX() / 10;
 			break;
 		default:
-			extra = GetSTR() / 10 + GetCHA() / 20 + CastToClient()->GetHeroicSTR() / 10;
+			extra = CastToClient()->GetHeroicSTR() / 10;
 			break;
 		}
 		hit.damage_done += extra;
@@ -5529,10 +5529,10 @@ void Client::SetAttackTimer()
 
 		//if we have no weapon..
 		if (ItemToUse == nullptr)
-			delay = 100 * GetHandToHandDelay();
+			delay = 60 * GetHandToHandDelay();
 		else
 			//we have a weapon, use its delay
-			delay = 100 * ItemToUse->Delay;
+			delay = 60 * ItemToUse->Delay;
 
 		speed = delay / haste_mod;
 
@@ -5608,7 +5608,7 @@ void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 	// or you have any amount of GiveDoubleAttack
 	if (candouble && hand == EQ::invslot::slotSecondary)
 		candouble =
-		    GetSkill(EQ::skills::SkillDoubleAttack) > 149 ||
+		    GetSkill(EQ::skills::SkillDoubleAttack) > 50 ||
 		    (aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack) > 0;
 
 	if (candouble) {
