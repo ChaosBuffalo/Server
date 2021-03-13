@@ -627,7 +627,7 @@ void Client::CBHandleTributeSyncingOfStats()
 	int mana_diff = newMana - baseMana;
 	int haste_diff = agi;
 
-	if (mit_diff != oldAC || hp_diff != oldHp || mana_diff != oldMana | haste_diff != oldHaste){
+	if (Connected() && (mit_diff != oldAC || hp_diff != oldHp || mana_diff != oldMana || haste_diff != oldHaste)){
 		const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
 		if (inst == nullptr)
 			return;
