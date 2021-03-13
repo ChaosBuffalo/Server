@@ -176,7 +176,10 @@ Client::Client(EQStreamInterface* ieqs)
   tmSitting(0),
   cb_max_mana(0),
   firstSync(true),
-  cb_max_mana_minus_tribute(0),
+  cb_max_mana_minus_tribute(-1),
+  cb_mitigation_ac_tribute(-1),
+  cb_max_hp_minus_tribute(-1),
+  cb_haste_tribute(-1),
   cb_early_sync_count(0)
 {
 

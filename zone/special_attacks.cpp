@@ -1927,8 +1927,8 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 				else {
 					tauntchance += static_cast<float>(level_difference) * 5.0f;
-					if (tauntchance > 65)
-						tauntchance = 65.0f;
+			/*		if (tauntchance > 65)
+						tauntchance = 65.0f;*/
 				}
 			}
 
@@ -1949,7 +1949,8 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 		if (Success) {
 			if (hate_top && hate_top != this) {
-				int newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + 1 + bonus_hate;
+				int currentTop = who->GetNPCHate(hate_top);
+				int newhate = (currentTop - who->GetNPCHate(this)) + std::max(int(currentTop / 10.0f), 1) + bonus_hate;
 				who->CastToNPC()->AddToHateList(this, newhate);
 				Success = true;
 			} else {

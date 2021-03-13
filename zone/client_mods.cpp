@@ -606,36 +606,50 @@ int32 Client::CalcMaxMana()
 
 void Client::CBHandleTributeSyncingOfStats()
 {
-	const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
-	if (inst == nullptr)
-		return;
-	EQ::ItemData data = *inst->GetItem();
+
+	int oldMana = cb_max_mana_minus_tribute;
+	int oldHp = cb_max_hp_minus_tribute;
+	int oldAC = cb_mitigation_ac_tribute;
+	int oldHaste = cb_haste_tribute;
 	int baseMana = CalcBaseMana();
 	int newMana = CBCalcBaseMana();
-	data.Mana = newMana - baseMana;
-	cb_max_mana_minus_tribute = data.Mana;
 	int baseHP = CalcBaseHP();
 	int newHP = CBCalcBaseHP();
-	data.HP = newHP - baseHP;
-	cb_max_hp_minus_tribute = data.HP;
-	int diff = cb_mitigation_ac - mitigation_ac;
-	data.AC = diff;
-	cb_mitigation_ac_tribute = diff;
-	EQ::ItemInstance copy{*inst, data};
+
 	int agi = GetAGI();
-	if (agi > 255){
+	if (agi > 255) {
 		agi = 255 + (agi - 255) / 4;
 	}
 	agi = agi / 5;
-	data.Haste = agi;
-	LogDebug("Client::SyncCBManaToClient() called for [{}] Mana - Base [{}] New [{}] Modifier: [{}]", GetName(), baseMana, newMana, data.Mana);
-	LogDebug("Client::SyncCBManaToClient() called for [{}] HP - Base [{}] New [{}] Modifier: [{}]", GetName(), baseHP, newHP, data.HP);
-	LogDebug("Client::SyncCBManaToClient() called for [{}] AC - Base [{}] New [{}] Modifier: [{}]", GetName(), mitigation_ac, cb_mitigation_ac, data.AC);
-	LogDebug("Client::SyncCBManaToClient() called for [{}] Haste - New [{}]", GetName(), data.Haste);
-	ToggleTribute(true);
-	PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN, copy, false);
-	SendItemPacket(EQ::invslot::TRIBUTE_BEGIN, &copy, ItemPacketTributeItem);
-	safe_delete(inst);
+
+	int mit_diff = cb_mitigation_ac - mitigation_ac;
+	int hp_diff = newHP - baseHP;
+	int mana_diff = newMana - baseMana;
+	int haste_diff = agi;
+
+	if (mit_diff != oldAC || hp_diff != oldHp || mana_diff != oldMana | haste_diff != oldHaste){
+		const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
+		if (inst == nullptr)
+			return;
+		EQ::ItemData data = *inst->GetItem();
+		data.HP = hp_diff;
+		data.Mana = mana_diff;
+		data.Haste = haste_diff;
+		data.AC = mit_diff;
+		EQ::ItemInstance copy{ *inst, data };
+		cb_max_mana_minus_tribute = mana_diff;
+		cb_max_hp_minus_tribute = hp_diff;
+		cb_mitigation_ac_tribute = mit_diff;
+		cb_haste_tribute = haste_diff;
+		LogDebug("Client::SyncCBManaToClient() called for [{}] Mana - Base [{}] New [{}] Modifier: [{}]", GetName(), baseMana, newMana, data.Mana);
+		LogDebug("Client::SyncCBManaToClient() called for [{}] HP - Base [{}] New [{}] Modifier: [{}]", GetName(), baseHP, newHP, data.HP);
+		LogDebug("Client::SyncCBManaToClient() called for [{}] AC - Base [{}] New [{}] Modifier: [{}]", GetName(), mitigation_ac, cb_mitigation_ac, data.AC);
+		LogDebug("Client::SyncCBManaToClient() called for [{}] Haste - New [{}]", GetName(), data.Haste);
+		ToggleTribute(true);
+		PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN, copy, false);
+		SendItemPacket(EQ::invslot::TRIBUTE_BEGIN, &copy, ItemPacketTributeItem);
+		safe_delete(inst);
+	}
 }
 
 int32 Client::CBCalcMaxMana()

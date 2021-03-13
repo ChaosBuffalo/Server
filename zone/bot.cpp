@@ -5147,6 +5147,10 @@ bool Bot::Attack(Mob* other, int Hand, bool FromRiposte, bool IsStrikethrough, b
 	if (my_hit.base_damage > 1)
 		hate = my_hit.base_damage;
 
+	if (IsWarriorClass()) {
+		hate *= 3;
+	}
+
 	//if weapon damage > 0 then we know we can hit the target with this weapon
 	//otherwise we cannot and we set the damage to -5 later on
 	if (my_hit.base_damage > 0) {

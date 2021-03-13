@@ -75,8 +75,6 @@ void NPC::CalcBonuses()
 
 void Client::CBHandleStatCorrections()
 {
-	CBCalcMaxMana();
-	CBCalcMaxHp();
 	CBCalcAC();
 	CBHandleTributeSyncingOfStats();
 }
@@ -115,11 +113,8 @@ void Client::CalcBonuses()
 	CalcMaxHP();
 	CalcMaxMana();
 	CalcMaxEndurance();
-
 	CBHandleStatCorrections();
 	//We need to calc item bonuses again cause tribute items have been modified in the stat correction step
-	memset(&itembonuses, 0, sizeof(StatBonuses));
-	CalcItemBonuses(&itembonuses);
 
 	SetAttackTimer();
 

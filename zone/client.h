@@ -566,9 +566,9 @@ public:
 
 	inline virtual int32 GetDelayDeath() const { return aabonuses.DelayDeath + spellbonuses.DelayDeath + itembonuses.DelayDeath + 11; }
 
-	inline virtual int32 GetMaxMana() const override { return cb_max_mana - cb_max_mana_minus_tribute; }
+	//inline virtual int32 GetMaxMana() const override { return cb_max_mana - cb_max_mana_minus_tribute; }
 
-	inline virtual int32 GetMaxHP() const override { return cb_max_hp - cb_max_hp_minus_tribute; }
+	//inline virtual int32 GetMaxHP() const override { return cb_max_hp - cb_max_hp_minus_tribute; }
 
 	virtual float GetProcChances(float ProcBonus, uint16 hand = EQ::invslot::slotPrimary) override;
 	virtual float GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 hand = EQ::invslot::slotPrimary, Mob *on = nullptr) override;
@@ -1625,6 +1625,7 @@ protected:
 	int cb_early_sync_count;
 	int cb_mitigation_ac;
 	int cb_mitigation_ac_tribute;
+	int cb_haste_tribute;
 	bool firstSync;
 
 	glm::vec4 m_AutoAttackPosition;
