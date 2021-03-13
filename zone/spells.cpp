@@ -1083,7 +1083,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					channelbonuses += spellbonuses.ChannelChanceSpells + itembonuses.ChannelChanceSpells + aabonuses.ChannelChanceSpells;
 
 				// max 93% chance at 252 skill
-				channelchance = 30 + (GetSkill(EQ::skills::SkillChanneling) + GetSTA()) / 400.0f * 100;
+				channelchance = 30 + (GetSkill(EQ::skills::SkillChanneling) + (GetSTA() / 4)) / 400.0f * 100;
 				channelchance -= attacked_count * 2;
 				channelchance += channelchance * channelbonuses / 100.0f;
 			}
@@ -1120,7 +1120,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					distance_moved = d_x * d_x + d_y * d_y;
 					// if you moved 1 unit, that's 25% off your chance to regain.
 					// if you moved 2, you lose 100% off your chance
-					distancemod = distance_moved * 10;
+					distancemod = distance_moved * 15;
 					channelchance -= distancemod;
 				}
 				else
@@ -1134,7 +1134,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 
 			if(!spells[spell_id].uninterruptable && zone->random.Real(0, 100) > channelchance) {
 				LogSpells("Casting of [{}] canceled: interrupted", spell_id);
-				int endCost = zone->random.Int(40, 60);
+				int endCost = attacked_count * 10;
 				if (IsClient() && didntMove && GetEndurancePercent() > endCost) {
 					SetEndurance(GetEndurance() - int((GetEndurance() * (endCost / 100.0f))));
 				}

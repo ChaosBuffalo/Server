@@ -5144,7 +5144,7 @@ bool Bot::Attack(Mob* other, int Hand, bool FromRiposte, bool IsStrikethrough, b
 		hate = (weapon->GetItem()->Damage + weapon->GetItem()->ElemDmgAmt);
 
 	my_hit.base_damage = GetWeaponDamage(other, weapon, &hate);
-	if (hate == 0 && my_hit.base_damage > 1)
+	if (my_hit.base_damage > 1)
 		hate = my_hit.base_damage;
 
 	//if weapon damage > 0 then we know we can hit the target with this weapon

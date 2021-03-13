@@ -1267,6 +1267,11 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, uint
 				}
 
 				dmg = dmg <= 0 ? 1 : dmg;
+				if (IsClient() && weapon_item->GetItem()->IsType2HWeapon()) {
+					double damageBonus = zone->random.Real(1.25, 3.0);
+					dmg = int(dmg * damageBonus);
+
+				}
 			}
 		}
 		else {
@@ -1551,7 +1556,7 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
 		hate = (weapon->GetItem()->Damage + weapon->GetItem()->ElemDmgAmt);
 
 	my_hit.base_damage = GetWeaponDamage(other, weapon, &hate);
-	if (hate == 0 && my_hit.base_damage > 1)
+	if (my_hit.base_damage > 1)
 		hate = my_hit.base_damage;
 
 	//if weapon damage > 0 then we know we can hit the target with this weapon
