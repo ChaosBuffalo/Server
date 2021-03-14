@@ -887,7 +887,10 @@ void Client::SetLevel(uint8 set_level, bool command)
 	this->SendAppearancePacket(AT_WhoLevel, set_level); // who level change
 
 	LogInfo("Setting Level for [{}] to [{}]", GetName(), set_level);
-
+	cb_max_mana_minus_tribute = -1;
+	cb_mitigation_ac_tribute = -1;
+	cb_haste_tribute = -1;
+	cb_max_hp_minus_tribute = -1;
 	CalcBonuses();
 
 	if(!RuleB(Character, HealOnLevel)) {
