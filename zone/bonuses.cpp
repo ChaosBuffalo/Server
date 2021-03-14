@@ -109,12 +109,10 @@ void Client::CalcBonuses()
 	CalcPR();
 	CalcCR();
 	CalcCorrup();
-
+	CBHandleStatCorrections();
 	CalcMaxHP();
 	CalcMaxMana();
 	CalcMaxEndurance();
-	CBHandleStatCorrections();
-	//We need to calc item bonuses again cause tribute items have been modified in the stat correction step
 
 	SetAttackTimer();
 
