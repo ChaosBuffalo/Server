@@ -747,7 +747,7 @@ int32 Client::CBCalcBaseMana()
 	switch (GetCasterClass()) {
 		case 'I':
 		case 'W':
-			TotalRawStatCount = 7 * Int + 5 * Wis + 3 * Cha;
+			TotalRawStatCount = 3 * Int + 2 * Wis + Cha;
 			ConvertedWisInt = (((5 * (400 + TotalRawStatCount)) / 2) * 5 * GetLevel() / 400);
 			LogDebug("Client::CalcCBBaseMana() called for [{}] - Raw Weight [{}] Final [{}]", GetName(), TotalRawStatCount, ConvertedWisInt);
 			base_data = database.GetBaseData(GetLevel(), GetClass());
