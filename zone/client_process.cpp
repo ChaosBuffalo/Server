@@ -114,7 +114,7 @@ bool Client::Process() {
 				HandleRespawnFromHover(0);
 		}
 
-		if (firstSync) {
+		if (firstSync && Connected()) {
 			CalcBonuses();
 			firstSync = false;
 		}
