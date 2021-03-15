@@ -8600,6 +8600,21 @@ void Bot::ProcessBotGroupInvite(Client* c, std::string botName) {
 	if(c) {
 		Bot* invitedBot = GetBotByBotClientOwnerAndBotName(c, botName);
 
+		if (invitedBot == nullptr && c->HasGroup()) {
+			std::list<Mob*> groupList;
+			c->GetGroup()->GetMemberList(groupList);
+			for (std::list<Mob*>::iterator mobIter = groupList.begin(); mobIter != groupList.end(); ++mobIter) {
+				Mob* mob = *mobIter;
+				if (mob->IsClient()) {
+					Client* otherClient = mob->CastToClient();
+					invitedBot = GetBotByBotClientOwnerAndBotName(otherClient, botName);
+					if (invitedBot != nullptr) {
+						break;
+					}
+				}
+			}
+		}
+
 		if(invitedBot && !invitedBot->HasGroup()) {
 			if(!c->IsGrouped()) {
 				Group *g = new Group(c);
