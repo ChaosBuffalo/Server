@@ -272,7 +272,7 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 	// per AA.
 	int level = GetLevel();
 	uint32 xpPerAA = RuleI(AA, ExpPerPoint);
-	if (level >= 51) {
+	if (level >= 70) {
 		uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
 
 		float colorModifier = GetConLevelModifierPercent(conlevel);
@@ -892,6 +892,7 @@ void Client::SetLevel(uint8 set_level, bool command)
 	cb_haste_tribute = -1;
 	cb_max_hp_minus_tribute = -1;
 	CalcBonuses();
+	firstSync = true;
 
 	if(!RuleB(Character, HealOnLevel)) {
 		int mhp = CalcMaxHP();
