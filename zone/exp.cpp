@@ -119,8 +119,11 @@ uint32 Client::CalcEXP(uint8 conlevel) {
 		totalmod *= RuleR(Character, ExpMultiplier);
 	}
 
-	if(zone->newzone_data.zone_exp_multiplier >= 0){
+	if(zone->newzone_data.zone_exp_multiplier > 0){
 		zemmod *= zone->newzone_data.zone_exp_multiplier;
+	}
+	else {
+		zemmod *= 1.5f;
 	}
 
 	if(RuleB(Character,UseRaceClassExpBonuses))
