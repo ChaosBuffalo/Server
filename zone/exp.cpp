@@ -275,7 +275,7 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 	// per AA.
 	int level = GetLevel();
 	uint32 xpPerAA = RuleI(AA, ExpPerPoint);
-	if (level >= 70) {
+	if (level >= 75) {
 		uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
 
 		float colorModifier = GetConLevelModifierPercent(conlevel);
@@ -300,8 +300,14 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 		else if (level > 30 && level <= 40) {
 			aaPerLevel = 15;
 		}
-		else if (level > 40) {
+		else if (level > 40 && level <= 50) {
 			aaPerLevel = 20;
+		}
+		else if (level > 50 && level <= 60) {
+			aaPerLevel = 25;
+		}
+		else if (level > 60) {
+			aaPerLevel = 30;
 		}
 		uint32 xp_for_level = GetEXPForLevel(level + 1) - GetEXPForLevel(level);
 		float ratio = float(add_aaxp) / xp_for_level;
