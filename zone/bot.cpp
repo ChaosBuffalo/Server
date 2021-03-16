@@ -3074,7 +3074,6 @@ void Bot::AI_Process()
 		bool behind_mob = false;
 		bool backstab_weapon = false;
 		if (GetClass() == ROGUE) {
-
 			behind_mob = BehindMob(tar, GetX(), GetY()); // Can be separated for other future use
 			backstab_weapon = p_item && p_item->GetItemBackstabDamage();
 		}
@@ -6337,7 +6336,7 @@ void Bot::TryBackstab(Mob *other, int ReuseTime) {
 	if(!other)
 		return;
 
-	bool bIsBehind = false;
+	bool bIsBehind = true;
 	bool bCanFrontalBS = false;
 	const EQ::ItemInstance* inst = GetBotItem(EQ::invslot::slotPrimary);
 	const EQ::ItemData* botpiercer = nullptr;
@@ -6350,13 +6349,14 @@ void Bot::TryBackstab(Mob *other, int ReuseTime) {
 	}
 
 	int tripleChance = (itembonuses.TripleBackstab + spellbonuses.TripleBackstab + aabonuses.TripleBackstab);
-	if (BehindMob(other, GetX(), GetY()))
-		bIsBehind = true;
-	else {
-		int FrontalBSChance = (itembonuses.FrontalBackstabChance + spellbonuses.FrontalBackstabChance + aabonuses.FrontalBackstabChance);
-		if (FrontalBSChance && (FrontalBSChance > zone->random.Int(0, 100)))
-			bCanFrontalBS = true;
-	}
+	//if (BehindMob(other, GetX(), GetY()))
+	//	bIsBehind = true;
+	//else {
+	//	int FrontalBSChance = (itembonuses.FrontalBackstabChance + spellbonuses.FrontalBackstabChance + aabonuses.FrontalBackstabChance);
+	//	if (FrontalBSChance && (FrontalBSChance > zone->random.Int(0, 100)))
+	//		bCanFrontalBS = true;
+	//}
+
 
 	if (bIsBehind || bCanFrontalBS) {
 		int chance = (10 + (GetDEX() / 10) + (itembonuses.HeroicDEX / 10));

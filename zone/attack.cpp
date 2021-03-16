@@ -1007,17 +1007,6 @@ int Client::offense(EQ::skills::SkillType skill)
 	case EQ::skills::SkillThrowing:
 		stat_bonus = GetDEX();
 		break;
-
-		// Mobs with no weapons default to H2H.
-		// Since H2H is capped at 100 for many many classes,
-		// lets not handicap mobs based on not spawning with a
-		// weapon.
-		//
-		// Maybe we tweak this if Disarm is actually implemented.
-
-	case EQ::skills::SkillHandtoHand:
-		offense = GetBestMeleeSkill();
-		break;
 	}
 
 	if (stat_bonus >= 10)
@@ -4810,7 +4799,7 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 	}
 
 	if (IsClient()) {
-		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetDEX() * 3) / 20;
+		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetSTA() * 3) / 20;
 	}
 	damage += damage * dmgbonusmod / 100;
 }

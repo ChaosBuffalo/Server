@@ -720,7 +720,7 @@ int32 Client::CBCalcBaseHP()
 	int Int = GetINT();
 	int Wis = GetWIS();
 
-	int sum = Cha * 2 + Str * 3 + Sta * 6 + Int + Wis;
+	int sum = Cha * 2 + Str * 3 + Sta * 5 + Int + Wis;
 	if (sum > 255) {
 		sum = (sum - 255) / 2;
 		sum += 255;
@@ -729,7 +729,7 @@ int32 Client::CBCalcBaseHP()
 	auto base_data = database.GetBaseData(GetLevel(), GetClass());
 	if (base_data) {
 		total += base_data->base_hp + (base_data->hp_factor * sum);
-		total += (GetHeroicSTA() * 6 + GetHeroicSTR() * 3 + GetHeroicCHA() * 2 + GetHeroicINT() + GetHeroicWIS());
+		total += (GetHeroicSTA() * 5 + GetHeroicSTR() * 3 + GetHeroicCHA() * 2 + GetHeroicINT() + GetHeroicWIS());
 	}
 	return total;
 }

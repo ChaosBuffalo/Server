@@ -2652,8 +2652,13 @@ bool BotDatabase::LoadGroupedBotsByGroupID(const uint32 owner_id, const uint32 g
 	if (!results.RowCount())
 		return true;
 
-	for (auto row = results.begin(); row != results.end(); ++row)
-		group_list.push_back(atoi(row[0]));
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		uint32 botId = atoi(row[0]);
+		if (std::find(group_list.begin(), group_list.end(), botId) == group_list.end()) {
+			group_list.push_back(botId);
+		}
+	}
+	
 
 	return true;
 }
