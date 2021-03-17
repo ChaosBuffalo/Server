@@ -571,7 +571,6 @@ public:
 	//inline virtual int32 GetMaxHP() const override { return cb_max_hp - cb_max_hp_minus_tribute; }
 
 	virtual float GetProcChances(float ProcBonus, uint16 hand = EQ::invslot::slotPrimary) override;
-	virtual float GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 hand = EQ::invslot::slotPrimary, Mob *on = nullptr) override;
 
 	int32 GetActSpellCost(uint16 spell_id, int32);
 	int32 GetActSpellCasttime(uint16 spell_id, int32);

@@ -1622,35 +1622,56 @@ uint32 Bot::GetATKRating() {
 
 int32 Bot::GenerateBaseHitPoints() {
 	// Calc Base Hit Points
-	int new_base_hp = 0;
-	uint32 lm = GetClassLevelFactor();
-	int32 Post255;
-	int32 NormalSTA = GetSTA();
-	if (GetOwner() && GetOwner()->CastToClient() && GetOwner()->CastToClient()->ClientVersion() >= EQ::versions::ClientVersion::SoD && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
-		float SoDPost255;
-		if(((NormalSTA - 255) / 2) > 0)
-			SoDPost255 = ((NormalSTA - 255) / 2);
-		else
-			SoDPost255 = 0;
+	//int new_base_hp = 0;
+	//uint32 lm = GetClassLevelFactor();
+	//int32 Post255;
+	//int32 NormalSTA = GetSTA();
 
-		int hp_factor = GetClassHPFactor();
+	int Cha = GetCBCHA();
+	int Str = GetCBSTR();
+	int Sta = GetCBSTA();
+	int Int = GetCBINT();
+	int Wis = GetCBWIS();
 
-		if(level < 41)
-			new_base_hp = (5 + (GetLevel() * hp_factor / 12) + ((NormalSTA - SoDPost255) * GetLevel() * hp_factor / 3600));
-		else if(level < 81)
-			new_base_hp = (5 + (40 * hp_factor / 12) + ((GetLevel() - 40) * hp_factor / 6) + ((NormalSTA - SoDPost255) * hp_factor / 90) + ((NormalSTA - SoDPost255) * (GetLevel() - 40) * hp_factor / 1800));
-		else
-			new_base_hp = (5 + (80 * hp_factor / 8) + ((GetLevel() - 80) * hp_factor / 10) + ((NormalSTA - SoDPost255) * hp_factor / 90) + ((NormalSTA - SoDPost255) * hp_factor / 45));
-	} else {
-		if(((NormalSTA - 255) / 2) > 0)
-			Post255 = ((NormalSTA - 255) / 2);
-		else
-			Post255 = 0;
-
-		new_base_hp = (5) + (GetLevel() * lm / 10) + (((NormalSTA - Post255) * GetLevel() * lm / 3000)) + ((Post255 * 1) * lm / 6000);
+	int sum = Cha * 2 + Str * 3 + Sta * 5 + Int + Wis;
+	if (sum > 255) {
+		sum = (sum - 255) / 2;
+		sum += 255;
 	}
-	this->base_hp = new_base_hp;
-	return new_base_hp;
+	int total = 5;
+	auto base_data = database.GetBaseData(GetLevel(), GetClass());
+	if (base_data) {
+		total += base_data->base_hp + (base_data->hp_factor * sum);
+		total += (GetHeroicSTA() * 5 + GetHeroicSTR() * 3 + GetHeroicCHA() * 2 + GetHeroicINT() + GetHeroicWIS());
+	}
+	this->base_hp = total;
+	return total;
+
+	//if (GetOwner() && GetOwner()->CastToClient() && GetOwner()->CastToClient()->ClientVersion() >= EQ::versions::ClientVersion::SoD && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+	//	float SoDPost255;
+	//	if(((NormalSTA - 255) / 2) > 0)
+	//		SoDPost255 = ((NormalSTA - 255) / 2);
+	//	else
+	//		SoDPost255 = 0;
+
+	//	int hp_factor = GetClassHPFactor();
+
+	//	if(level < 41)
+	//		new_base_hp = (5 + (GetLevel() * hp_factor / 12) + ((NormalSTA - SoDPost255) * GetLevel() * hp_factor / 3600));
+	//	else if(level < 81)
+	//		new_base_hp = (5 + (40 * hp_factor / 12) + ((GetLevel() - 40) * hp_factor / 6) + ((NormalSTA - SoDPost255) * hp_factor / 90) + ((NormalSTA - SoDPost255) * (GetLevel() - 40) * hp_factor / 1800));
+	//	else
+	//		new_base_hp = (5 + (80 * hp_factor / 8) + ((GetLevel() - 80) * hp_factor / 10) + ((NormalSTA - SoDPost255) * hp_factor / 90) + ((NormalSTA - SoDPost255) * hp_factor / 45));
+	//} else {
+	//	if(((NormalSTA - 255) / 2) > 0)
+	//		Post255 = ((NormalSTA - 255) / 2);
+	//	else
+	//		Post255 = 0;
+
+	//	new_base_hp = (5) + (GetLevel() * lm / 10) + (((NormalSTA - Post255) * GetLevel() * lm / 3000)) + ((Post255 * 1) * lm / 6000);
+	//}
+	//this->base_hp = new_base_hp;
+	//return new_base_hp;
 }
 
 void Bot::LoadAAs() {
@@ -6069,7 +6090,7 @@ int32 Bot::CalcBotFocusEffect(focusType bottype, uint16 focus_id, uint16 spell_i
 
 //proc chance includes proc bonus
 float Bot::GetProcChances(float ProcBonus, uint16 hand) {
-	int mydex = GetDEX();
+	int mydex = GetCBDEX() * 10; 
 	float ProcChance = 0.0f;
 	uint32 weapon_speed = 0;
 	switch (hand) {
@@ -6099,6 +6120,7 @@ float Bot::GetProcChances(float ProcBonus, uint16 hand) {
 	LogCombat("Proc chance [{}] ([{}] from bonuses)", ProcChance, ProcBonus);
 	return ProcChance;
 }
+
 
 int Bot::GetHandToHandDamage(void) {
 	if (RuleB(Combat, UseRevampHandToHand)) {
@@ -6902,10 +6924,21 @@ bool Bot::ProcessGuildRemoval(Client* guildOfficer, std::string botName) {
 }
 
 int32 Bot::CalcMaxMana() {
+	int Wis = GetCBWIS();
+	int Cha = GetCBCHA();
+	int Int = GetCBINT();
+	int TotalRawStatCount = 0;
+	int ConvertedWisInt = 0;
+	const BaseDataStruct* base_data = nullptr;
 	switch(GetCasterClass()) {
 		case 'I':
 		case 'W': {
-			max_mana = (GenerateBaseManaPoints() + itembonuses.Mana + spellbonuses.Mana + GroupLeadershipAAManaEnhancement());
+			TotalRawStatCount = 3 * Int + 2 * Wis + Cha;
+			ConvertedWisInt = (((5 * (400 + TotalRawStatCount)) / 2) * 5 * GetLevel() / 400);
+			base_data = database.GetBaseData(GetLevel(), GetClass());
+			if (base_data) {
+				max_mana = base_data->base_mana + (ConvertedWisInt * base_data->mana_factor) + (GetHeroicINT() * 10 + GetHeroicWIS() * 10 + GetHeroicCHA() * 5);
+			}
 			break;
 		}
 		case 'N': {
@@ -7111,6 +7144,20 @@ int32 Bot::GetActSpellCasttime(uint16 spell_id, int32 casttime) {
 	uint8 botclass = GetClass();
 	if (botlevel >= 51 && casttime >= 3000 && !BeneficialSpell(spell_id) && (botclass == SHADOWKNIGHT || botclass == RANGER || botclass == PALADIN || botclass == BEASTLORD ))
 		cast_reducer += ((GetLevel() - 50) * 3);
+
+	if (IsCBStatsEligible()) {
+		int agi = GetCBAGI();
+		if (agi > 255) {
+			agi = 255 + (agi - 255) / 4;
+		}
+		if (agi > 500) {
+			agi = 500;
+		}
+		agi = agi / 5;
+
+		cast_reducer += agi;
+	}
+
 
 	if((casttime >= 4000) && BeneficialSpell(spell_id) && IsBuffSpell(spell_id)) {
 		switch (GetAA(aaSpellCastingDeftness)) {
@@ -8892,6 +8939,18 @@ void Bot::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses* newbon, bool
 	if(newbon->haste < (int32)item->Haste) {
 		newbon->haste = item->Haste;
 	}
+
+	int agi = GetCBAGI();
+	if (agi > 255) {
+		agi = 255 + (agi - 255) / 4;
+	}
+	agi = agi / 5;
+
+	newbon->haste = newbon->haste + agi;
+	if (newbon->haste > 90) {
+		newbon->haste = 90;
+	}
+
 	if(item->Regen > 0)
 		newbon->HPRegen += item->Regen;
 

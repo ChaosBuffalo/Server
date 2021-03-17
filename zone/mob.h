@@ -198,6 +198,7 @@ public:
 	void DoAttack(Mob *other, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
 	int MonkSpecialAttack(Mob* other, uint8 skill_used);
 	virtual void TryBackstab(Mob *other,int ReuseTime = 10);
+	bool IsCBStatsEligible();
 	bool AvoidDamage(Mob *attacker, DamageHitInfo &hit);
 	int compute_tohit(EQ::skills::SkillType skillinuse);
 	int GetTotalToHit(EQ::skills::SkillType skill, int chance_mod); // compute_tohit + spell bonuses

@@ -1256,7 +1256,7 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, uint
 				}
 
 				dmg = dmg <= 0 ? 1 : dmg;
-				if (IsClient() && weapon_item->GetItem()->IsType2HWeapon()) {
+				if (IsCBStatsEligible() && weapon_item->GetItem()->IsType2HWeapon()) {
 					double damageBonus = zone->random.Real(1.25, 3.0);
 					dmg = int(dmg * damageBonus);
 
@@ -4083,25 +4083,6 @@ float Client::GetProcChances(float ProcBonus, uint16 hand)
 	return ProcChance;
 }
 
-float Client::GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 hand, Mob* on) {
-
-	if (!on)
-		return ProcChance;
-
-	int myagi = on->GetAGI() * 10;
-	ProcBonus = 0;
-	ProcChance = 0;
-
-	uint32 weapon_speed = GetWeaponSpeedbyHand(hand);
-
-	ProcChance = (static_cast<float>(weapon_speed) * RuleR(Combat, AvgDefProcsPerMinute) / 60000.0f); // compensate for weapon_speed being in ms
-	ProcBonus += static_cast<float>(myagi) * RuleR(Combat, DefProcPerMinAgiContrib) / 100.0f;
-	ProcChance = ProcChance + (ProcChance * ProcBonus);
-
-	LogCombat("Defensive Proc chance [{}] ([{}] from bonuses)", ProcChance, ProcBonus);
-	return ProcChance;
-}
-
 
 //proc chance includes proc bonus
 float Mob::GetProcChances(float ProcBonus, uint16 hand)
@@ -4133,6 +4114,15 @@ float Mob::GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 h
 		return ProcChance;
 
 	int myagi = on->GetAGI();
+	if (IsCBStatsEligible()) {
+		if (IsClient()) {
+			myagi = on->GetAGI() * 10;
+		}
+		else {
+			Bot* bot = on->CastToBot();
+			myagi = bot->GetCBAGI() * 10;
+		}
+	}
 	ProcBonus = 0;
 	ProcChance = 0;
 
@@ -4800,6 +4790,10 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 
 	if (IsClient()) {
 		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetSTA() * 3) / 20;
+	}
+	if (IsBot()) {
+		Bot* bot = CastToBot();
+		dmgbonusmod += (bot->GetCBSTR() * 3 + bot->GetCBCHA() * 2 + bot->GetCBSTA() * 3) / 20;
 	}
 	damage += damage * dmgbonusmod / 100;
 }

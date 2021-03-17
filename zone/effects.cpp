@@ -24,6 +24,7 @@
 #include "client.h"
 #include "entity.h"
 #include "mob.h"
+#include "bot.h"
 
 #include "string_ids.h"
 #include "worldserver.h"
@@ -85,8 +86,28 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 		value_BaseEffect += bonus_damage;
 	}
 
+	if (IsBot() && IsCBStatsEligible()) {
+		Bot* bot = CastToBot();
+		int dex_bonus = bot->GetCBDEX() * 8;
+		if (dex_bonus > 255)
+			dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		int int_bonus = bot->GetCBINT() * 3;
+		if (int_bonus > 255) {
+			int_bonus = 255 + ((int_bonus - 255) / 5);
+		}
+		int wis_bonus = bot->GetCBWIS() * 3;
+		if (wis_bonus > 255) {
+			wis_bonus = 255 + ((wis_bonus - 255) / 5);
+		}
+		chance += (dex_bonus + int_bonus + wis_bonus) / 150;
+		int damageBonus = bot->GetCBINT() * 3 + bot->GetCBCHA() * 2 + bot->GetCBWIS() * 3;
+		float bonus_damage = value_BaseEffect * (damageBonus / 2000);
+		value += bonus_damage;
+		value_BaseEffect += bonus_damage;
+	}
+
 	//Crtical Hit Calculation pathway
-	if (chance > 0 || (IsClient() && GetLevel() >= RuleI(Spells, WizCritLevel))) {
+	if (chance > 0 || (IsCBStatsEligible() && GetLevel() >= RuleI(Spells, WizCritLevel))) {
 
 		 int32 ratio = RuleI(Spells, BaseCritRatio); //Critical modifier is applied from spell effects only. Keep at 100 for live like criticals.
 
@@ -103,7 +124,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			ratio += itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
 		}
 
-		else if (IsClient() || (IsMerc() && GetClass() == CASTERDPS)) {
+		else if (IsCBStatsEligible() || (IsMerc() && GetClass() == CASTERDPS)) {
 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))){
 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
 				ratio += zone->random.Int(20,100);
@@ -111,7 +132,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			}
 		}
 
-		if (IsClient() && GetClass() == WIZARD)
+		if (IsCBStatsEligible() && GetClass() == WIZARD)
 			ratio += RuleI(Spells, WizCritRatio); //Default is zero
 
 		if (Critical){
@@ -227,6 +248,27 @@ int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
 		value_BaseEffect += bonus_damage;
 	}
 
+
+	if (IsBot() && IsCBStatsEligible()) {
+		Bot* bot = CastToBot();
+		int dex_bonus = bot->GetCBDEX() * 8;
+		if (dex_bonus > 255)
+			dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		int int_bonus = bot->GetCBINT() * 3;
+		if (int_bonus > 255) {
+			int_bonus = 255 + ((int_bonus - 255) / 5);
+		}
+		int wis_bonus = bot->GetCBWIS() * 3;
+		if (wis_bonus > 255) {
+			wis_bonus = 255 + ((wis_bonus - 255) / 5);
+		}
+		chance += (dex_bonus + int_bonus + wis_bonus) / 150;
+		int damageBonus = bot->GetCBINT() * 3 + bot->GetCBCHA() * 2 + bot->GetCBWIS() * 3;
+		float bonus_damage = value_BaseEffect * (damageBonus / 2000);
+		value += bonus_damage;
+		value_BaseEffect += bonus_damage;
+	}
+
 	if (chance > 0 && (zone->random.Roll(chance))) {
 		int32 ratio = 200;
 		ratio += itembonuses.DotCritDmgIncrease + spellbonuses.DotCritDmgIncrease + aabonuses.DotCritDmgIncrease;
@@ -326,6 +368,15 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 		value_BaseEffect += bonus_damage;
 	}
 
+
+	if (IsBot() && IsCBStatsEligible()) {
+		Bot* bot = CastToBot();
+		int damageBonus = bot->GetCBWIS() * 3 + bot->GetCBCHA() * 2 + bot->GetCBINT();
+		float bonus_damage = value_BaseEffect * (damageBonus / 2000.0f);
+		value += bonus_damage;
+		value_BaseEffect += bonus_damage;
+	}
+
 	// Instant Heals
 	if(spells[spell_id].buffduration < 1) {
 
@@ -338,6 +389,17 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			if (dex_bonus > 255)
 				dex_bonus = 255 + ((dex_bonus - 255) / 5);
 			int wis_bonus = GetWIS() * 4;
+			if (wis_bonus > 255) {
+				wis_bonus = 255 + ((wis_bonus - 255) / 5);
+			}
+			chance += (dex_bonus + wis_bonus) / 100;
+		}
+		if (IsBot() && IsCBStatsEligible()) {
+			Bot* bot = CastToBot();
+			int dex_bonus = bot->GetCBDEX() * 8;
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+			int wis_bonus = bot->GetCBWIS() * 4;
 			if (wis_bonus > 255) {
 				wis_bonus = 255 + ((wis_bonus - 255) / 5);
 			}
@@ -393,6 +455,18 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			if (dex_bonus > 255)
 				dex_bonus = 255 + ((dex_bonus - 255) / 5);
 			int wis_bonus = GetWIS() * 4;
+			if (wis_bonus > 255) {
+				wis_bonus = 255 + ((wis_bonus - 255) / 5);
+			}
+			chance += (dex_bonus + wis_bonus) / 8900.0f;
+		}
+
+		if (IsBot() && IsCBStatsEligible()) {
+			Bot* bot = CastToBot();
+			int dex_bonus = bot->GetCBDEX() * 8;
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+			int wis_bonus = bot->GetCBWIS() * 4;
 			if (wis_bonus > 255) {
 				wis_bonus = 255 + ((wis_bonus - 255) / 5);
 			}
@@ -468,6 +542,11 @@ int32 Mob::GetActSpellDuration(uint16 spell_id, int32 duration)
 	increase += GetFocusEffect(focusSpellDuration, spell_id);
 	if (IsClient()) {
 		increase += (GetCHA() + GetWIS() + GetINT()) / 10;
+	}
+
+	if (IsBot() && IsCBStatsEligible()) {
+		Bot* bot = CastToBot();
+		increase += (bot->GetCBCHA() + bot->GetCBWIS() + bot->GetCBINT()) / 10;
 	}
 	int tic_inc = 0;
 	tic_inc = GetFocusEffect(focusSpellDurByTic, spell_id);

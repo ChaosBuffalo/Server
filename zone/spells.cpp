@@ -1097,7 +1097,8 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					channelbonuses += spellbonuses.ChannelChanceSpells + itembonuses.ChannelChanceSpells + aabonuses.ChannelChanceSpells;
 
 				// max 93% chance at 252 skill
-				channelchance = 30 + GetSkill(EQ::skills::SkillChanneling) / 400.0f * 100;
+				Bot* bot = CastToBot();
+				channelchance = 30 + (GetSkill(EQ::skills::SkillChanneling) + (bot->GetCBSTA() / 4)) / 400.0f * 100;
 				channelchance -= attacked_count * 2;
 				channelchance += channelchance * channelbonuses / 100.0f;
 			}
@@ -1135,7 +1136,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 			if(!spells[spell_id].uninterruptable && zone->random.Real(0, 100) > channelchance) {
 				LogSpells("Casting of [{}] canceled: interrupted", spell_id);
 				int endCost = attacked_count * 10;
-				if (IsClient() && didntMove && GetEndurancePercent() > endCost) {
+				if (IsCBStatsEligible() && didntMove && GetEndurancePercent() > endCost) {
 					SetEndurance(GetEndurance() - int((GetEndurance() * (endCost / 100.0f))));
 				}
 				else {

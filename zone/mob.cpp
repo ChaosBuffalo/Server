@@ -518,6 +518,11 @@ Mob::~Mob()
 #endif
 }
 
+bool Mob::IsCBStatsEligible()
+{
+	return IsClient() || (IsBot() && GetLevel() > 51);
+}
+
 uint32 Mob::GetAppearanceValue(EmuAppearance iAppearance) {
 	switch (iAppearance) {
 		// 0 standing, 1 sitting, 2 ducking, 3 lieing down, 4 looting
