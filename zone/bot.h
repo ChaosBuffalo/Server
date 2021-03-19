@@ -35,6 +35,7 @@
 #include "../common/global_define.h"
 #include "guild_mgr.h"
 #include "worldserver.h"
+#include "bot_class_attacks.h"
 
 #include <sstream>
 
@@ -98,6 +99,7 @@ enum BotCastingChanceConditional : uint8
 
 class Bot : public NPC {
 	friend class Mob;
+	friend class BotClassAttack;
 public:
 	// Class enums
 	enum BotTradeType {	// types of trades a bot can do
@@ -666,6 +668,8 @@ private:
 	int32	max_end;
 	int32	end_regen;
 	uint32 timers[MaxTimer];
+
+	BotClassAttack* classAttack;
 
 	Timer m_evade_timer; // can be moved to pTimers at some point
 	Timer m_alt_combat_hate_timer;

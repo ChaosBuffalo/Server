@@ -146,7 +146,7 @@ bool Bot::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes) {
 							if(GetNumberNeedingHealedInGroup(80, false) >= 3)
 								botSpell = GetBestBotSpellForGroupHealOverTime(this);
 
-							if(hasAggro)
+							if(hasAggro && (hpr <= 75))
 								botSpell = GetBestBotSpellForPercentageHeal(this);
 						}
 						else {

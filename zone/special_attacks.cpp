@@ -21,6 +21,7 @@
 
 #include "client.h"
 #include "entity.h"
+#include "bot.h"
 #include "mob.h"
 #include "string_ids.h"
 #include "lua_parser.h"
@@ -503,6 +504,11 @@ int Mob::MonkSpecialAttack(Mob *other, uint8 unchecked_type)
 
 	if (IsClient()) {
 		if (GetWeaponDamage(other, CastToClient()->GetInv().GetItem(itemslot)) <= 0) {
+			max_dmg = DMG_INVULNERABLE;
+		}
+	
+	} else if (IsBot()) {
+		if (GetWeaponDamage(other, CastToBot()->GetBotItem(itemslot)) <= 0) {
 			max_dmg = DMG_INVULNERABLE;
 		}
 	} else {
@@ -1549,14 +1555,14 @@ void NPC::DoClassAttacks(Mob *target) {
 		switch(GetClass()){
 			case SHADOWKNIGHT: case SHADOWKNIGHTGM:{
 				if (CastSpell(SPELL_NPC_HARM_TOUCH, target->GetID())) {
-					knightreuse = 330 * 1000;
+					knightreuse = HarmTouchReuseTime * 1000;
 					}
 				break;
 			}
 			case PALADIN: case PALADINGM:{
 				if(GetHPRatio() < 20) {
 					if (CastSpell(SPELL_LAY_ON_HANDS, GetID())) {
-						knightreuse = 330 * 1000;
+						knightreuse = LayOnHandsReuseTime * 1000;
 					}
 				} else {
 					knightreuse = 2000; //Check again in two seconds.
