@@ -25,6 +25,7 @@
 #include "lua_parser.h"
 #include "../common/string_util.h"
 #include "../common/say_link.h"
+#include "bot_class_attacks.h"
 
 extern volatile bool is_zone_loaded;
 

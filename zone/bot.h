@@ -99,7 +99,6 @@ class BotClassAttack;
 
 class Bot : public NPC {
 	friend class Mob;
-	friend class BotClassAttack;
 public:
 	// Class enums
 	enum BotTradeType {	// types of trades a bot can do

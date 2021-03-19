@@ -280,8 +280,8 @@ bool BotClassAttack::IsCasterClass(Mob* mob)
 bool BotClassAttack::CanBash(Bot* mob)
 {
 	return mob->GetLevel() >= RuleI(Combat, NPCBashKickLevel) && (mob->GetRace() == OGRE || mob->GetRace() == TROLL || mob->GetRace() == BARBARIAN) ||
-	(mob->m_inv.GetItem(EQ::invslot::slotSecondary) && mob->m_inv.GetItem(EQ::invslot::slotSecondary)->GetItem()->ItemType == EQ::item::ItemTypeShield) || 
-	(mob->m_inv.GetItem(EQ::invslot::slotPrimary) && mob->m_inv.GetItem(EQ::invslot::slotPrimary)->GetItem()->IsType2HWeapon() && mob->GetAA(aa2HandBash) >= 1);
+	(mob->GetBotItem(EQ::invslot::slotSecondary) && mob->GetBotItem(EQ::invslot::slotSecondary)->GetItem()->ItemType == EQ::item::ItemTypeShield) || 
+	(mob->GetBotItem(EQ::invslot::slotPrimary) && mob->GetBotItem(EQ::invslot::slotPrimary)->GetItem()->IsType2HWeapon() && mob->GetAA(aa2HandBash) >= 1);
 }
 
 RogueAttack::RogueAttack(Bot* bot)
