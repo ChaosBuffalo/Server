@@ -35,7 +35,6 @@
 #include "../common/global_define.h"
 #include "guild_mgr.h"
 #include "worldserver.h"
-#include "bot_class_attacks.h"
 
 #include <sstream>
 
@@ -96,6 +95,7 @@ enum BotCastingChanceConditional : uint8
 	cntHSND = 16
 };
 
+class BotClassAttack;
 
 class Bot : public NPC {
 	friend class Mob;
