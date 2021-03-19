@@ -106,21 +106,21 @@ bool BotClassAttack::DoKickAttack(Mob* target, bool isReposte)
 	if (target == bot) {
 		return false;
 	}
-	if (kick_timer.Check(false)) {
-		int dmg = bot->GetBaseSkillDamage(static_cast<EQ::skills::SkillType>(EQ::skills::SkillKick), target);
-		bot->DoAnim(animKick);
-		if (bot->GetWeaponDamage(target, bot->GetBotItem(EQ::invslot::slotFeet)) <= 0)
-			dmg = DMG_INVULNERABLE;
+	if (bot->GetLevel() >= RuleI(Combat, NPCBashKickLevel)) {
+		if (kick_timer.Check(false)) {
+			int dmg = bot->GetBaseSkillDamage(static_cast<EQ::skills::SkillType>(EQ::skills::SkillKick), target);
+			bot->DoAnim(animKick);
+			if (bot->GetWeaponDamage(target, bot->GetBotItem(EQ::invslot::slotFeet)) <= 0)
+				dmg = DMG_INVULNERABLE;
 
-		int reuse = (KickReuseTime * 1000);
-		float HasteModifier = (bot->GetHaste() * 0.01f);
-		bot->DoSpecialAttackDamage(target, EQ::skills::SkillKick, dmg, 0, -1, reuse);
-		kick_timer.Start(reuse / HasteModifier);
-		return true;
+			int reuse = (KickReuseTime * 1000);
+			float HasteModifier = (bot->GetHaste() * 0.01f);
+			bot->DoSpecialAttackDamage(target, EQ::skills::SkillKick, dmg, 0, -1, reuse);
+			kick_timer.Start(reuse / HasteModifier);
+			return true;
+		}
 	}
-	else {
-		return false;
-	}
+	return false;
 }
 
 bool BotClassAttack::DoTaunt(Mob* target, bool isReposte)
