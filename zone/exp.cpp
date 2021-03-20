@@ -1061,7 +1061,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 	unsigned int i;
 	uint32 groupexp = exp;
 	uint8 membercount = 0;
-	uint8 minlevel = 1;
+	uint8 minlevel = 1000;
 
 	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (members[i] != nullptr) {
