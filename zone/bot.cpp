@@ -402,7 +402,7 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 		SetHP(max_hp/5);
 		SetMana(0);
 		BuffFadeAll();
-		SpellOnTarget(756, this); // Rezz effects
+		//SpellOnTarget(756, this); // Rezz effects
 	}
 
 	if(current_mana > max_mana)
