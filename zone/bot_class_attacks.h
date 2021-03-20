@@ -106,11 +106,14 @@ class MonkAttack : public BotClassAttack {
 
 		void PerformWus(Mob *target, bool IsRiposte);
 
-		EQ::skills::SkillType GetHighestMonkAttack();
+		EQ::skills::SkillType GetHighestMonkKick();
+
+		EQ::skills::SkillType GetHighestMonkPunch();
 
 	private:
 		
 		Timer tiger_claw;
+		Timer monk_punch;
 
 };
 

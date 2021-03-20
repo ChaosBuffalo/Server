@@ -1,7 +1,7 @@
 #include "bot_class_attacks.h"
 
 KnightClassAttack::KnightClassAttack(Bot* bot)
-: BotClassAttack(bot)
+: BotClassAttack(bot), knight_attack_timer(1000)
 {
 
 }
@@ -49,7 +49,7 @@ bool KnightClassAttack::DoClassAttack(Mob * target, bool IsRiposte)
 }
 
 BotClassAttack::BotClassAttack(Bot* bot)
-:bot(bot)
+:bot(bot), kick_timer(1000), taunt_timer(1000), bash_timer(1000)
 {
 	if (!bot->GetSkill(EQ::skills::SkillBash)) {
 		bash_timer.Disable();
@@ -285,7 +285,7 @@ bool BotClassAttack::CanBash(Bot* mob)
 }
 
 RogueAttack::RogueAttack(Bot* bot)
-: BotClassAttack(bot)
+: BotClassAttack(bot), backstab_timer(1000)
 {
 
 }
@@ -317,7 +317,7 @@ void EmptyAttack::PerformAttack(Mob *target, bool IsReposte)
 }
 
 MonkAttack::MonkAttack(Bot* bot)
-: BotClassAttack(bot)
+: BotClassAttack(bot), tiger_claw(1000), monk_punch(1000)
 {
 
 }
@@ -334,11 +334,20 @@ bool MonkAttack::DoClassAttack(Mob *target, bool IsRiposte)
 		}
 	}
 	if (kick_timer.Check(false)) {
-		EQ::skills::SkillType skill = GetHighestMonkAttack();
+		EQ::skills::SkillType skill = GetHighestMonkKick();
 		int reuse = (bot->MonkSpecialAttack(target, skill) - 1);
 		PerformWus(target, IsRiposte);
 		kick_timer.Start((reuse * 1000) / HasteModifier);
 		return true;
+	}
+	if (bot->GetLevel() >= 20) {
+		if (monk_punch.Check(false)) {
+			EQ::skills::SkillType skill = GetHighestMonkPunch();
+			int reuse = (bot->MonkSpecialAttack(target, skill) - 1);
+			PerformWus(target, IsRiposte);
+			monk_punch.Start((reuse * 1000) / HasteModifier);
+			return true;
+		}
 	}
 	return false;
 }
@@ -389,18 +398,12 @@ void MonkAttack::PerformWus(Mob *target, bool IsRiposte)
 	}
 }
 
-EQ::skills::SkillType MonkAttack::GetHighestMonkAttack()
+EQ::skills::SkillType MonkAttack::GetHighestMonkKick()
 {
 	EQ::skills::SkillType skill_to_use = EQ::skills::SkillKick;
 	int level = bot->GetLevel();
 	if (level >= 30) {
 		skill_to_use = EQ::skills::SkillFlyingKick;
-	}
-	else if (level >= 25) {
-		skill_to_use = EQ::skills::SkillDragonPunch;
-	}
-	else if (level >= 20) {
-		skill_to_use = EQ::skills::SkillEagleStrike;
 	}
 	else if (level >= 5) {
 		skill_to_use = EQ::skills::SkillRoundKick;
@@ -408,8 +411,19 @@ EQ::skills::SkillType MonkAttack::GetHighestMonkAttack()
 	return skill_to_use;
 }
 
+EQ::skills::SkillType MonkAttack::GetHighestMonkPunch()
+{
+	int level = bot->GetLevel();
+	if (level >= 25) {
+		return EQ::skills::SkillDragonPunch;
+	}
+	else {
+		return  EQ::skills::SkillEagleStrike;
+	}
+}
+
 BerserkerAttack::BerserkerAttack(Bot* bot)
-: BotClassAttack(bot)
+: BotClassAttack(bot), frenzy(1000)
 {
 
 }
