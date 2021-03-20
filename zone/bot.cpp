@@ -5196,7 +5196,7 @@ bool Bot::Attack(Mob* other, int Hand, bool FromRiposte, bool IsStrikethrough, b
 	if (my_hit.base_damage > 1)
 		hate = my_hit.base_damage;
 
-	if (IsWarriorClass()) {
+	if (BotClassAttack::IsTankingClass(this)) {
 		hate *= 3;
 	}
 
