@@ -1061,12 +1061,12 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 	unsigned int i;
 	uint32 groupexp = exp;
 	uint8 membercount = 0;
-	uint8 maxlevel = 1;
+	uint8 minlevel = 1;
 
 	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (members[i] != nullptr) {
-			if(members[i]->GetLevel() > maxlevel)
-				maxlevel = members[i]->GetLevel();
+			if(members[i]->GetLevel() < minlevel)
+				minlevel = members[i]->GetLevel();
 
 			membercount++;
 		}
@@ -1082,7 +1082,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 	//if(membercount > 1 &&  membercount <= 6)
 	//	groupexp += (uint32)((float)exp * groupmod * (RuleR(Character, GroupExpMultiplier)));
 
-	int conlevel = Mob::GetLevelCon(maxlevel, other->GetLevel());
+	int conlevel = Mob::GetLevelCon(minlevel, other->GetLevel());
 	if(conlevel == CON_GRAY)
 		return;	//no exp for greenies...
 
@@ -1094,7 +1094,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 		{
 			Client *cmember = members[i]->CastToClient();
 			// add exp + exp cap
-			int16 diff = cmember->GetLevel() - maxlevel;
+			int16 diff = minlevel - cmember->GetLevel();
 			int16 maxdiff = -(cmember->GetLevel()*15/10 - cmember->GetLevel());
 				if(maxdiff > -5)
 					maxdiff = -5;
