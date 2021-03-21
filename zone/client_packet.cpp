@@ -1802,7 +1802,7 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 			MessageString(Chat::White, AA_ON);
 		m_epp.perAA = action->exp_value;
 		if (m_epp.perAA < 0 || m_epp.perAA > 100)
-			m_epp.perAA = 100;	// stop exploit with sanity check
+			m_epp.perAA = 0;	// stop exploit with sanity check
 
 								// send an update
 		SendAlternateAdvancementStats();
