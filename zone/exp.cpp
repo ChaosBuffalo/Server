@@ -525,7 +525,7 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 	}
 
 	add_aaxp = add_exp;
-	add_exp = GetEXP() + add_exp;
+	add_exp = add_exp;
 }
 
 void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
@@ -578,7 +578,7 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	//	m_epp.perAA = 0;
 	//}
 
-	exp = exp * (100 - m_epp.perAA) / 100;
+	exp = GetEXP() + exp * (100 - m_epp.perAA) / 100;
 
 	// Now update our character's normal and AA xp
 	SetEXP(exp, aaexp, resexp);
