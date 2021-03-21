@@ -1214,7 +1214,7 @@ bool ZoneDatabase::LoadCharacterData(uint32 character_id, PlayerProfile_Struct* 
 		pp->guildAutoconsent = atoi(row[r]); r++;								 // "guild_auto_consent,        "
 		pp->RestTimer = atoi(row[r]); r++;										 // "RestTimer,                 "
 		m_epp->aa_effects = atoi(row[r]); r++;									 // "`e_aa_effects`,			"
-		m_epp->perAA = 100; r++;										 // "`e_percent_to_aa`,			"
+		m_epp->perAA = atoi(row[r]); r++;										 // "`e_percent_to_aa`,			"
 		m_epp->expended_aa = atoi(row[r]); r++;									 // "`e_expended_aa_spent`,		"
 		m_epp->last_invsnapshot_time = atoul(row[r]); r++;						 // "`e_last_invsnapshot`		"
 		m_epp->next_invsnapshot_time = m_epp->last_invsnapshot_time + (RuleI(Character, InvSnapshotMinIntervalM) * 60);

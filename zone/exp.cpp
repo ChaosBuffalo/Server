@@ -536,7 +536,7 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	uint32 aaexp = 0;
 
 	if (m_epp.perAA<0 || m_epp.perAA>100)
-		m_epp.perAA=100;	// stop exploit with sanity check
+		m_epp.perAA=0;	// stop exploit with sanity check
 
 	// Calculate regular XP
 	CalculateExp(in_add_exp, exp, aaexp, conlevel, resexp);
@@ -577,6 +577,8 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	//	aaexp = 0;
 	//	m_epp.perAA = 0;
 	//}
+
+	exp = exp * (100 - m_epp.perAA) / 100;
 
 	// Now update our character's normal and AA xp
 	SetEXP(exp, aaexp, resexp);
