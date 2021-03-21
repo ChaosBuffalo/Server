@@ -1794,7 +1794,7 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 		if (m_epp.perAA > 0)
 			MessageString(Chat::White, AA_OFF);
 
-		m_epp.perAA = 100;
+		m_epp.perAA = 0;
 		SendAlternateAdvancementStats();
 	}
 	else if (action->action == aaActionSetEXP) {

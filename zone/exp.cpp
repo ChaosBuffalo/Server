@@ -303,10 +303,10 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 		else if (level > 40 && level <= 50) {
 			aaPerLevel = 20;
 		}
-		else if (level > 50 && level <= 60) {
+		else if (level > 50 && level <= 55) {
 			aaPerLevel = 25;
 		}
-		else if (level > 60 && level < 70) {
+		else if (level > 55 && level < 70) {
 			aaPerLevel = 30;
 		}
 		else {
