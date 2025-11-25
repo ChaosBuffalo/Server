@@ -173,7 +173,14 @@ Client::Client(EQStreamInterface* ieqs)
   hp_other_update_throttle_timer(500),
   position_update_timer(10000),
   consent_throttle_timer(2000),
-  tmSitting(0)
+  tmSitting(0),
+  cb_max_mana(0),
+  firstSync(true),
+  cb_max_mana_minus_tribute(-1),
+  cb_mitigation_ac_tribute(-1),
+  cb_max_hp_minus_tribute(-1),
+  cb_haste_tribute(-1),
+  cb_early_sync_count(0)
 {
 
 	for (int client_filter = 0; client_filter < _FilterCount; client_filter++)
@@ -1861,8 +1868,8 @@ const int32& Client::SetMana(int32 amount) {
 	if (amount != current_mana)
 		update = true;
 	current_mana = amount;
-	if (update)
-		Mob::SetMana(amount);
+	//if (update)
+	//	Mob::SetMana(amount);
 	CheckManaEndUpdate();
 	return current_mana;
 }
@@ -1953,6 +1960,7 @@ void Client::SendManaUpdate()
 	ManaUpdate_Struct* mana_update = (ManaUpdate_Struct*)mana_app->pBuffer;
 	mana_update->cur_mana = GetMana();
 	mana_update->max_mana = GetMaxMana();
+	LogDebug("Client::SendManaUpdate() called for [{}] - returning [{}], [{}]", GetName(), mana_update->cur_mana, mana_update->max_mana);
 	mana_update->spawn_id = GetID();
 	QueuePacket(mana_app);
 	safe_delete(mana_app);
@@ -2505,7 +2513,7 @@ bool Client::CanHaveSkill(EQ::skills::SkillType skill_id) const {
 	if (ClientVersion() < EQ::versions::ClientVersion::RoF2 && class_ == BERSERKER && skill_id == EQ::skills::Skill1HPiercing)
 		skill_id = EQ::skills::Skill2HPiercing;
 
-	return(database.GetSkillCap(GetClass(), skill_id, RuleI(Character, MaxLevel)) > 0);
+	return(content_db.GetSkillCap(GetClass(), skill_id, RuleI(Character, MaxLevel)) > 0);
 	//if you don't have it by max level, then odds are you never will?
 }
 
@@ -2513,7 +2521,7 @@ uint16 Client::MaxSkill(EQ::skills::SkillType skillid, uint16 class_, uint16 lev
 	if (ClientVersion() < EQ::versions::ClientVersion::RoF2 && class_ == BERSERKER && skillid == EQ::skills::Skill1HPiercing)
 		skillid = EQ::skills::Skill2HPiercing;
 
-	return(database.GetSkillCap(class_, skillid, level));
+	return(content_db.GetSkillCap(class_, skillid, level));
 }
 
 uint8 Client::SkillTrainLevel(EQ::skills::SkillType skillid, uint16 class_)
@@ -2521,7 +2529,7 @@ uint8 Client::SkillTrainLevel(EQ::skills::SkillType skillid, uint16 class_)
 	if (ClientVersion() < EQ::versions::ClientVersion::RoF2 && class_ == BERSERKER && skillid == EQ::skills::Skill1HPiercing)
 		skillid = EQ::skills::Skill2HPiercing;
 
-	return(database.GetTrainLevel(class_, skillid, RuleI(Character, MaxLevel)));
+	return(content_db.GetTrainLevel(class_, skillid, RuleI(Character, MaxLevel)));
 }
 
 uint16 Client::GetMaxSkillAfterSpecializationRules(EQ::skills::SkillType skillid, uint16 maxSkill)
@@ -4629,7 +4637,7 @@ uint32 Client::GetTotalATK()
 	uint32 WornCap = itembonuses.ATK;
 
 	if(IsClient()) {
-		AttackRating = ((WornCap * 1.342) + (GetSkill(EQ::skills::SkillOffense) * 1.345) + ((GetSTR() - 66) * 0.9) + (GetPrimarySkillValue() * 2.69));
+		AttackRating = ((WornCap * 1.342) + (GetSkill(EQ::skills::SkillOffense) * 1.345) + ((GetSTR()) * 0.9) + (GetPrimarySkillValue() * 2.69));
 		AttackRating += aabonuses.ATK + GroupLeadershipAAOffenseEnhancement();
 
 		if (AttackRating < 10)
@@ -4647,7 +4655,7 @@ uint32 Client::GetATKRating()
 {
 	uint32 AttackRating = 0;
 	if(IsClient()) {
-		AttackRating = (GetSkill(EQ::skills::SkillOffense) * 1.345) + ((GetSTR() - 66) * 0.9) + (GetPrimarySkillValue() * 2.69);
+		AttackRating = (GetSkill(EQ::skills::SkillOffense) * 1.345) + ((GetSTR()) * 0.9) + (GetPrimarySkillValue() * 2.69);
 
 		if (AttackRating < 10)
 			AttackRating = 10;
@@ -6557,10 +6565,10 @@ void Client::SendStatsWindow(Client* client, bool use_window)
 				break;
 			}
 			case 1: {
-				if(CalcMaxMana() > 0) {
+				if(GetMaxMana() > 0) {
 					cur_name = " M: ";
 					cur_field = itoa(GetMana());
-					total_field = itoa(CalcMaxMana());
+					total_field = itoa(GetMaxMana());
 				}
 				else { continue; }
 
@@ -6623,7 +6631,7 @@ void Client::SendStatsWindow(Client* client, bool use_window)
 				break;
 			}
 			case 1: {
-				if(CalcMaxMana() > 0) {
+				if(GetMaxMana() > 0) {
 					regen_row_header = "M: ";
 					regen_row_color = color_blue;
 
@@ -8723,11 +8731,11 @@ void Client::QuestReward(Mob* target, const QuestReward_Struct &reward, bool fac
 }
 
 void Client::SendHPUpdateMarquee(){
-	if (!this || !this->IsClient() || !this->current_hp || !this->max_hp)
+	if (!this || !this->IsClient() || !this->current_hp || !this->GetMaxHP())
 		return;
 
 	/* Health Update Marquee Display: Custom*/
-	uint8 health_percentage = (uint8)(this->current_hp * 100 / this->max_hp);
+	uint8 health_percentage = (uint8)(this->current_hp * 100 / this->GetMaxHP());
 	if (health_percentage >= 100)
 		return;
 

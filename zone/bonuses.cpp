@@ -73,6 +73,12 @@ void NPC::CalcBonuses()
 	Mob::CalcBonuses();
 }
 
+void Client::CBHandleStatCorrections()
+{
+	CBCalcAC();
+	CBHandleTributeSyncingOfStats();
+}
+
 void Client::CalcBonuses()
 {
 	memset(&itembonuses, 0, sizeof(StatBonuses));
@@ -103,7 +109,7 @@ void Client::CalcBonuses()
 	CalcPR();
 	CalcCR();
 	CalcCorrup();
-
+	CBHandleStatCorrections();
 	CalcMaxHP();
 	CalcMaxMana();
 	CalcMaxEndurance();
@@ -342,8 +348,13 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 		}
 
 		// FatherNitwit: New style haste, shields, and regens
-		if (newbon->haste < (int32)item->Haste) {
-			newbon->haste = item->Haste;
+
+		// more haste cuz its cool (slash also theres haste on the tribute)
+		if (newbon->haste < 90) {
+			newbon->haste += item->Haste;
+			if (newbon->haste > 90) {
+				newbon->haste = 90;
+			}
 		}
 		if (item->Regen > 0)
 			newbon->HPRegen += item->Regen;

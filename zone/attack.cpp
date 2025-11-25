@@ -530,6 +530,22 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 	return false;
 }
 
+
+int Client::CBGetACSoftcap()
+{
+	// from test server Resources/ACMitigation.txt
+	static int war_softcaps[] = {
+		312, 314, 316, 318, 320, 322, 324, 326, 328, 330, 332, 334, 336, 338, 340, 342, 344, 346, 348, 350, 352,
+		354, 356, 358, 360, 362, 364, 366, 368, 370, 372, 374, 376, 378, 380, 382, 384, 386, 388, 390, 392, 394,
+		396, 398, 400, 402, 404, 406, 408, 410, 412, 414, 416, 418, 420, 422, 424, 426, 428, 430, 432, 434, 436,
+		438, 440, 442, 444, 446, 448, 450, 452, 454, 456, 458, 460, 462, 464, 466, 468, 470, 472, 474, 476, 478,
+		480, 482, 484, 486, 488, 490, 492, 494, 496, 498, 500, 502, 504, 506, 508, 510, 512, 514, 516, 518, 520
+	};
+
+	int level = std::min(105, static_cast<int>(GetLevel())) - 1;
+	return war_softcaps[level];
+}
+
 int Mob::GetACSoftcap()
 {
 	// from test server Resources/ACMitigation.txt
@@ -590,7 +606,6 @@ int Mob::GetACSoftcap()
 	};
 
 	int level = std::min(105, static_cast<int>(GetLevel())) - 1;
-
 	switch (GetClass()) {
 	case WARRIOR:
 		return war_softcaps[level];
@@ -651,6 +666,13 @@ double Mob::GetSoftcapReturns()
 	default:
 		return 0.3;
 	}
+}
+
+double Client::CBGetSoftcapReturns()
+{
+	// These are based on the dev post, they seem to be correct for every level
+	// AKA no more hard caps
+	return 0.35;
 }
 
 int Mob::GetClassRaceACBonus()
@@ -779,6 +801,67 @@ int Mob::GetClassRaceACBonus()
 
 	return ac_bonus;
 }
+
+int Client::CBACSum(bool skip_caps)
+{
+	int ac = 0; // this should be base AC whenever shrouds come around
+	ac += itembonuses.AC; // items + food + tribute
+	int shield_ac = 0;
+	if (HasShieldEquiped() && IsClient()) {
+		auto client = CastToClient();
+		auto inst = client->GetInv().GetItem(EQ::invslot::slotSecondary);
+		if (inst) {
+			if (inst->GetItemRecommendedLevel(true) <= GetLevel())
+				shield_ac = inst->GetItemArmorClass(true);
+			else
+				shield_ac = client->CalcRecommendedLevelBonus(GetLevel(), inst->GetItemRecommendedLevel(true), inst->GetItemArmorClass(true));
+		}
+		shield_ac += client->GetHeroicSTR() / 10;
+		shield_ac += client->GetSTR() / 10;
+	}
+	// EQ math
+	ac = (ac * 4) / 3;
+	// anti-twink
+	if (!skip_caps && IsClient() && GetLevel() < RuleI(Combat, LevelToStopACTwinkControl))
+		ac = std::min(ac, 25 + 6 * GetLevel());
+	ac = std::max(0, ac + GetClassRaceACBonus());
+
+	auto spell_aa_ac = aabonuses.AC + spellbonuses.AC;
+	if (EQ::ValueWithin(static_cast<int>(GetClass()), NECROMANCER, ENCHANTER))
+		ac += GetSkill(EQ::skills::SkillDefense) / 2 + spell_aa_ac / 3;
+	else
+		ac += GetSkill(EQ::skills::SkillDefense) / 3 + spell_aa_ac / 4;
+	
+
+	if (GetAGI() >= 10)
+		ac += GetAGI() / 5;
+	if (ac < 0)
+		ac = 0;
+
+	if (!skip_caps && (IsClient()
+#ifdef BOTS
+		|| IsBot()
+#endif
+		)) {
+		auto softcap = CBGetACSoftcap();
+		auto returns = CBGetSoftcapReturns();
+		int total_aclimitmod = aabonuses.CombatStability + itembonuses.CombatStability + spellbonuses.CombatStability;
+		if (total_aclimitmod)
+			softcap = (softcap * (100 + total_aclimitmod)) / 100;
+		softcap += shield_ac;
+		if (ac > softcap) {
+			auto over_cap = ac - softcap;
+			ac = softcap + (over_cap * returns);
+		}
+		LogCombatDetail("ACSum ac [{}] softcap [{}] returns [{}]", ac, softcap, returns);
+	}
+	else {
+		LogCombatDetail("ACSum ac [{}]", ac);
+	}
+
+	return ac;
+}
+
 
 int Mob::ACSum(bool skip_caps)
 {
@@ -909,6 +992,25 @@ int Mob::offense(EQ::skills::SkillType skill)
 
 	if (stat_bonus >= 75)
 		offense += (2 * stat_bonus - 150) / 3;
+
+	offense += GetATK();
+	return offense;
+}
+
+int Client::offense(EQ::skills::SkillType skill)
+{
+	int offense = GetSkill(skill);
+	int stat_bonus = GetSTR();
+
+	switch (skill) {
+	case EQ::skills::SkillArchery:
+	case EQ::skills::SkillThrowing:
+		stat_bonus = GetDEX();
+		break;
+	}
+
+	if (stat_bonus >= 10)
+		offense += (2 * stat_bonus - 20) / 3;
 
 	offense += GetATK();
 	return offense;
@@ -1154,6 +1256,11 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, uint
 				}
 
 				dmg = dmg <= 0 ? 1 : dmg;
+				if (IsCBStatsEligible() && weapon_item->GetItem()->IsType2HWeapon()) {
+					double damageBonus = zone->random.Real(1.25, 3.0);
+					dmg = int(dmg * damageBonus);
+
+				}
 			}
 		}
 		else {
@@ -1438,7 +1545,7 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
 		hate = (weapon->GetItem()->Damage + weapon->GetItem()->ElemDmgAmt);
 
 	my_hit.base_damage = GetWeaponDamage(other, weapon, &hate);
-	if (hate == 0 && my_hit.base_damage > 1)
+	if (my_hit.base_damage > 1)
 		hate = my_hit.base_damage;
 
 	//if weapon damage > 0 then we know we can hit the target with this weapon
@@ -2223,7 +2330,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	Mob* killer = GetHateDamageTop(this);
 
-	entity_list.RemoveFromTargets(this, p_depop);
+	entity_list.RemoveFromTargets(this, true);
 
 	if (p_depop == true)
 		return false;
@@ -2739,6 +2846,18 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 		}
 
 		break;
+	}
+	if (IsBot()) {
+		auto botSelf = CastToBot();
+		if (botSelf && botSelf->GetBotOwner()) {
+			auto owner = botSelf->GetBotOwner()->CastToClient();
+			if (owner && !owner->IsDead() && owner->InZone()) {
+				if (!owner->hate_list.IsEntOnHateList(other)) {
+					owner->hate_list.AddEntToHateList(other, 0, 0, false, true);
+					owner->AddAutoXTarget(other); // this was being called on dead/out-of-zone clients
+				}
+			}
+		}
 	}
 #endif //BOTS
 
@@ -3788,6 +3907,25 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 					attacker->CastToClient()->QueuePacket(outapp, true, CLIENT_CONNECTED, filter);
 				}
 			}
+			// Lets send bot messages too
+			else if (attacker && attacker->IsBot()) {
+				if ((spell_id != SPELL_UNKNOWN || FromDamageShield) && damage > 0) {
+					//special crap for spell damage, looks hackish to me
+					char val1[20] = { 0 };
+					if (!FromDamageShield) {
+						entity_list.MessageCloseString(
+							this, /* Sender */
+							true, /* Skip Sender */
+							RuleI(Range, SpellMessages),
+							Chat::NonMelee, /* 283 */
+							HIT_NON_MELEE, /* %1 hit %2 for %3 points of non-melee damage. */
+							attacker->GetCleanName(), /* Message1 */
+							GetCleanName(), /* Message2 */
+							ConvertArray(damage, val1) /* Message3 */
+						);
+					}
+				}
+			}
 			skip = attacker;
 		}
 
@@ -3830,11 +3968,13 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 	else {
 		//else, it is a buff tic...
 		// So we can see our dot dmg like live shows it.
-		if (spell_id != SPELL_UNKNOWN && damage > 0 && attacker && attacker != this && attacker->IsClient()) {
+		if (spell_id != SPELL_UNKNOWN && damage > 0 && attacker && attacker != this && (attacker->IsClient() || attacker->IsBot())) {
 			//might filter on (attack_skill>200 && attack_skill<250), but I dont think we need it
-			attacker->FilteredMessageString(attacker, Chat::DotDamage, FilterDOT,
-				YOUR_HIT_DOT, GetCleanName(), itoa(damage), spells[spell_id].name);
+			if (attacker->IsClient()) {
+				attacker->FilteredMessageString(attacker, Chat::DotDamage, FilterDOT,
+					YOUR_HIT_DOT, GetCleanName(), itoa(damage), spells[spell_id].name);
 
+			}
 			/* older clients don't have the below String ID, but it will be filtered */
 			entity_list.FilteredMessageCloseString(
 				attacker, /* Sender */
@@ -3864,7 +4004,7 @@ void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
 	else
 		acthealed = amount;
 
-	if (acthealed > 100) {
+	if (acthealed > 0) {
 		if (caster) {
 			if (IsBuffSpell(spell_id)) { // hots
 										 // message to caster
@@ -3920,6 +4060,30 @@ void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
 	}
 }
 
+float Client::GetProcChances(float ProcBonus, uint16 hand)
+{
+	int mydex = GetDEX() * 10;
+	float ProcChance = 0.0f;
+
+	uint32 weapon_speed = GetWeaponSpeedbyHand(hand);
+
+	if (RuleB(Combat, AdjustProcPerMinute)) {
+		ProcChance = (static_cast<float>(weapon_speed) *
+			RuleR(Combat, AvgProcsPerMinute) / 60000.0f); // compensate for weapon_speed being in ms
+		ProcBonus += static_cast<float>(mydex) * RuleR(Combat, ProcPerMinDexContrib);
+		ProcChance += ProcChance * ProcBonus / 100.0f;
+	}
+	else {
+		ProcChance = RuleR(Combat, BaseProcChance) +
+			static_cast<float>(mydex) / RuleR(Combat, ProcDexDivideBy);
+		ProcChance += ProcChance * ProcBonus / 100.0f;
+	}
+
+	LogCombat("Proc chance [{}] ([{}] from bonuses)", ProcChance, ProcBonus);
+	return ProcChance;
+}
+
+
 //proc chance includes proc bonus
 float Mob::GetProcChances(float ProcBonus, uint16 hand)
 {
@@ -3950,6 +4114,15 @@ float Mob::GetDefensiveProcChances(float &ProcBonus, float &ProcChance, uint16 h
 		return ProcChance;
 
 	int myagi = on->GetAGI();
+	if (IsCBStatsEligible()) {
+		if (IsClient()) {
+			myagi = on->GetAGI() * 10;
+		}
+		else {
+			Bot* bot = on->CastToBot();
+			myagi = bot->GetCBAGI() * 10;
+		}
+	}
 	ProcBonus = 0;
 	ProcChance = 0;
 
@@ -4365,7 +4538,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 	// a lot of good info: http://giline.versus.jp/shiden/damage_e.htm, http://giline.versus.jp/shiden/su.htm
 
 	// We either require an innate crit chance or some SPA 169 to crit
-	bool innate_crit = false;
+	bool innate_crit = IsClient() || IsBot();
 	int crit_chance = GetCriticalChanceBonus(hit.skill);
 	if ((GetClass() == WARRIOR || GetClass() == BERSERKER) && GetLevel() >= 12)
 		innate_crit = true;
@@ -4385,14 +4558,27 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			difficulty = RuleI(Combat, MeleeCritDifficulty);
 		int roll = zone->random.Int(1, difficulty);
 
-		int dex_bonus = GetDEX();
-		if (dex_bonus > 255)
-			dex_bonus = 255 + ((dex_bonus - 255) / 5);
-		dex_bonus += 45; // chances did not match live without a small boost
+		int dex_bonus;
+		if (IsClient()) {
+			dex_bonus = GetDEX() * 8;
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+			int str_bonus = GetSTR() * 4;
+			if (str_bonus > 255) {
+				str_bonus = 255 + ((str_bonus - 255) / 5);
+			}
+			dex_bonus += str_bonus;
+		}
+		else {
+			dex_bonus = GetDEX();
+			if (dex_bonus > 255)
+				dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		}
+		
 
 						 // so if we have an innate crit we have a better chance, except for ber throwing
-		if (!innate_crit || (GetClass() == BERSERKER && hit.skill == EQ::skills::SkillThrowing))
-			dex_bonus = dex_bonus * 3 / 5;
+		/*if (!innate_crit || (GetClass() == BERSERKER && hit.skill == EQ::skills::SkillThrowing))
+			dex_bonus = dex_bonus * 3 / 5;*/
 
 		if (crit_chance)
 			dex_bonus += dex_bonus * crit_chance / 100;
@@ -4602,6 +4788,13 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 		                defender->aabonuses.MeleeMitigationEffect);
 	}
 
+	if (IsClient()) {
+		dmgbonusmod += (GetSTR() * 3 + GetCHA() * 2 + GetSTA() * 3) / 20;
+	}
+	if (IsBot()) {
+		Bot* bot = CastToBot();
+		dmgbonusmod += (bot->GetCBSTR() * 3 + bot->GetCBCHA() * 2 + bot->GetCBSTA() * 3) / 20;
+	}
 	damage += damage * dmgbonusmod / 100;
 }
 
@@ -5324,10 +5517,10 @@ void Client::SetAttackTimer()
 
 		//if we have no weapon..
 		if (ItemToUse == nullptr)
-			delay = 100 * GetHandToHandDelay();
+			delay = 60 * GetHandToHandDelay();
 		else
 			//we have a weapon, use its delay
-			delay = 100 * ItemToUse->Delay;
+			delay = 60 * ItemToUse->Delay;
 
 		speed = delay / haste_mod;
 
@@ -5403,7 +5596,7 @@ void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 	// or you have any amount of GiveDoubleAttack
 	if (candouble && hand == EQ::invslot::slotSecondary)
 		candouble =
-		    GetSkill(EQ::skills::SkillDoubleAttack) > 149 ||
+		    GetSkill(EQ::skills::SkillDoubleAttack) > 50 ||
 		    (aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack) > 0;
 
 	if (candouble) {

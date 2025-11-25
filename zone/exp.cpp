@@ -30,6 +30,7 @@
 #include "quest_parser_collection.h"
 #include "lua_parser.h"
 #include "string_ids.h"
+#include <algorithm>
 
 #ifdef BOTS
 #include "bot.h"
@@ -118,8 +119,11 @@ uint32 Client::CalcEXP(uint8 conlevel) {
 		totalmod *= RuleR(Character, ExpMultiplier);
 	}
 
-	if(zone->newzone_data.zone_exp_multiplier >= 0){
+	if(zone->newzone_data.zone_exp_multiplier > 0){
 		zemmod *= zone->newzone_data.zone_exp_multiplier;
+	}
+	else {
+		zemmod *= 1.5f;
 	}
 
 	if(RuleB(Character,UseRaceClassExpBonuses))
@@ -269,15 +273,51 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 	// For this, we ignore the provided value of add_aaxp because it doesn't
 	// apply.  XP per AA is normalized such that there are X white con kills
 	// per AA.
-
-	uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
+	int level = GetLevel();
 	uint32 xpPerAA = RuleI(AA, ExpPerPoint);
+	if (level >= 75) {
+		uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
 
-	float colorModifier = GetConLevelModifierPercent(conlevel);
-	float percentToAAXp = (float)m_epp.perAA / 100;
+		float colorModifier = GetConLevelModifierPercent(conlevel);
+		float percentToAAXp = (float)m_epp.perAA / 100;
 
-	// Normalize the amount of AA XP we earned for this kill.
-	add_aaxp = percentToAAXp * (xpPerAA / (whiteConKillsPerAA / colorModifier));
+		// Normalize the amount of AA XP we earned for this kill.
+		add_aaxp = (xpPerAA / (whiteConKillsPerAA / colorModifier));
+	}
+	else {
+		int aaPerLevel = level == 1 ? 1 : 2;
+		if (level > 2 && level <= 10) 
+		{
+			aaPerLevel = 3;
+		} else if (level > 10 && level <= 20) 
+		{
+			aaPerLevel = 5;
+		}
+		else if (level > 20 && level <= 30) 
+		{
+			aaPerLevel = 10;
+		}
+		else if (level > 30 && level <= 40) {
+			aaPerLevel = 15;
+		}
+		else if (level > 40 && level <= 50) {
+			aaPerLevel = 20;
+		}
+		else if (level > 50 && level <= 60) {
+			aaPerLevel = 25;
+		}
+		else if (level > 60 && level < 70) {
+			aaPerLevel = 30;
+		}
+		else {
+			aaPerLevel = 40;
+		}
+		uint32 xp_for_level = GetEXPForLevel(level + 1) - GetEXPForLevel(level);
+		float ratio = float(add_aaxp) / xp_for_level;
+		add_aaxp = xpPerAA * ratio * aaPerLevel;
+	}
+
+
 }
 
 void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp)
@@ -426,10 +466,8 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 	if (!resexp)
 	{
 		//figure out how much of this goes to AAs
-		add_aaxp = add_exp * m_epp.perAA / 100;
+	
 
-		//take that amount away from regular exp
-		add_exp -= add_aaxp;
 
 		float totalmod = 1.0;
 		float zemmod = 1.0;
@@ -486,6 +524,7 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 		add_exp *= RuleR(Character, FinalExpMultiplier);
 	}
 
+	add_aaxp = add_exp;
 	add_exp = GetEXP() + add_exp;
 }
 
@@ -497,7 +536,7 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	uint32 aaexp = 0;
 
 	if (m_epp.perAA<0 || m_epp.perAA>100)
-		m_epp.perAA=0;	// stop exploit with sanity check
+		m_epp.perAA=100;	// stop exploit with sanity check
 
 	// Calculate regular XP
 	CalculateExp(in_add_exp, exp, aaexp, conlevel, resexp);
@@ -532,12 +571,12 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 		aaexp = had_aaexp;	//watch for wrap
 	}
 
-	// AA Sanity Checking for players who set aa exp and deleveled below allowed aa level.
-	if (GetLevel() <= 50 && m_epp.perAA > 0) {
-		Message(Chat::Yellow, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
-		aaexp = 0;
-		m_epp.perAA = 0;
-	}
+	//// AA Sanity Checking for players who set aa exp and deleveled below allowed aa level.
+	//if (GetLevel() <= 50 && m_epp.perAA > 0) {
+	//	Message(Chat::Yellow, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
+	//	aaexp = 0;
+	//	m_epp.perAA = 0;
+	//}
 
 	// Now update our character's normal and AA xp
 	SetEXP(exp, aaexp, resexp);
@@ -768,10 +807,15 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 	m_pp.exp = set_exp;
 	m_pp.expAA = set_aaxp;
 
-	if (GetLevel() < 51) {
-		m_epp.perAA = 0;	// turn off aa exp if they drop below 51
-	} else
-		SendAlternateAdvancementStats();	//otherwise, send them an AA update
+	//if (GetLevel() < 51) {
+	//	m_epp.perAA = 0;        // turn off aa exp if they drop below 51
+	//}
+	//else
+	//
+	//SendAlternateAdvancementStats();        //otherwise, send them an AA update
+
+
+	SendAlternateAdvancementStats();	//otherwise, send them an AA update
 
 	//send the expdata in any case so the xp bar isnt stuck after leveling
 	uint32 tmpxp1 = GetEXPForLevel(GetLevel()+1);
@@ -855,8 +899,12 @@ void Client::SetLevel(uint8 set_level, bool command)
 	this->SendAppearancePacket(AT_WhoLevel, set_level); // who level change
 
 	LogInfo("Setting Level for [{}] to [{}]", GetName(), set_level);
-
+	cb_max_mana_minus_tribute = -1;
+	cb_mitigation_ac_tribute = -1;
+	cb_haste_tribute = -1;
+	cb_max_hp_minus_tribute = -1;
 	CalcBonuses();
+	firstSync = true;
 
 	if(!RuleB(Character, HealOnLevel)) {
 		int mhp = CalcMaxHP();
@@ -871,7 +919,7 @@ void Client::SetLevel(uint8 set_level, bool command)
 
 	DoTributeUpdate();
 	SendHPUpdate();
-	SetMana(CalcMaxMana());
+	SetMana(GetMaxMana());
 	UpdateWho();
 
 	UpdateMercLevel();
@@ -1024,15 +1072,15 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 		}
 	}
 
-	float groupmod;
-	if (membercount > 1 && membercount < 6)
-		groupmod = 1 + .2*(membercount - 1); //2members=1.2exp, 3=1.4, 4=1.6, 5=1.8
-	else if (membercount == 6)
-		groupmod = 2.16;
-	else
-		groupmod = 1.0;
-	if(membercount > 1 &&  membercount <= 6)
-		groupexp += (uint32)((float)exp * groupmod * (RuleR(Character, GroupExpMultiplier)));
+	//float groupmod;
+	//if (membercount > 1 && membercount < 6)
+	//	groupmod = 1 + .2*(membercount - 1); //2members=1.2exp, 3=1.4, 4=1.6, 5=1.8
+	//else if (membercount == 6)
+	//	groupmod = 2.16;
+	//else
+	//	groupmod = 1.0;
+	//if(membercount > 1 &&  membercount <= 6)
+	//	groupexp += (uint32)((float)exp * groupmod * (RuleR(Character, GroupExpMultiplier)));
 
 	int conlevel = Mob::GetLevelCon(maxlevel, other->GetLevel());
 	if(conlevel == CON_GRAY)
@@ -1052,7 +1100,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 					maxdiff = -5;
 			if (diff >= (maxdiff)) { /*Instead of person who killed the mob, the person who has the highest level in the group*/
 				uint32 tmp = (cmember->GetLevel()+3) * (cmember->GetLevel()+3) * 75 * 35 / 10;
-				uint32 tmp2 = groupexp / membercount;
+				uint32 tmp2 = groupexp / 2;
 				cmember->AddEXP( tmp < tmp2 ? tmp : tmp2, conlevel );
 			}
 		}

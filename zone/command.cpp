@@ -2633,9 +2633,9 @@ void command_mana(Client *c, const Seperator *sep)
 	t = c->GetTarget() ? c->GetTarget() : c;
 
 	if(t->IsClient())
-		t->CastToClient()->SetMana(t->CastToClient()->CalcMaxMana());
+		t->CastToClient()->SetMana(t->CastToClient()->GetMaxMana());
 	else
-		t->SetMana(t->CalcMaxMana());
+		t->SetMana(t->GetMaxMana());
 }
 
 void command_flymode(Client *c, const Seperator *sep)
@@ -12552,7 +12552,7 @@ void command_max_all_skills(Client *c, const Seperator *sep)
 			}
 			else
 			{
-				int max_skill_level = database.GetSkillCap(c->GetClass(), (EQ::skills::SkillType)i, c->GetLevel());
+				int max_skill_level = content_db.GetSkillCap(c->GetClass(), (EQ::skills::SkillType)i, c->GetLevel());
 				c->SetSkill((EQ::skills::SkillType)i, max_skill_level);
 			}
 		}

@@ -24,6 +24,8 @@
 
 #include "../common/data_verification.h"
 
+#include "../common/item_data.h"
+
 #include "client.h"
 #include "mob.h"
 
@@ -325,17 +327,17 @@ int32 Client::CalcMaxHP()
 	max_hp += spellbonuses.HP + aabonuses.HP;
 	max_hp += GroupLeadershipAAHealthEnhancement();
 	max_hp += max_hp * ((spellbonuses.MaxHPChange + itembonuses.MaxHPChange) / 10000.0f);
-	if (current_hp > max_hp) {
-		current_hp = max_hp;
-	}
-	int hp_perc_cap = spellbonuses.HPPercCap[0];
-	if (hp_perc_cap) {
-		int curHP_cap = (max_hp * hp_perc_cap) / 100;
-		if (current_hp > curHP_cap || (spellbonuses.HPPercCap[1] && current_hp > spellbonuses.HPPercCap[1])) {
+	//if (current_hp > max_hp) {
+	//	current_hp = max_hp;
+	//}
+	//int hp_perc_cap = spellbonuses.HPPercCap[0];
+	//if (hp_perc_cap) {
+	//	int curHP_cap = (max_hp * hp_perc_cap) / 100;
+	//	if (current_hp > curHP_cap || (spellbonuses.HPPercCap[1] && current_hp > spellbonuses.HPPercCap[1])) {
 
-			current_hp = curHP_cap;
-		}
-	}
+	//		current_hp = curHP_cap;
+	//	}
+	//}
 
 	// hack fix for client health not reflecting server value
 	last_max_hp = 0;
@@ -588,18 +590,185 @@ int32 Client::CalcMaxMana()
 	if (max_mana < 0) {
 		max_mana = 0;
 	}
-	if (current_mana > max_mana) {
-		current_mana = max_mana;
-	}
-	int mana_perc_cap = spellbonuses.ManaPercCap[0];
-	if (mana_perc_cap) {
-		int curMana_cap = (max_mana * mana_perc_cap) / 100;
-		if (current_mana > curMana_cap || (spellbonuses.ManaPercCap[1] && current_mana > spellbonuses.ManaPercCap[1])) {
-			current_mana = curMana_cap;
-		}
-	}
+	//if (current_mana > max_mana) {
+	//	current_mana = max_mana;
+	//}
+	//int mana_perc_cap = spellbonuses.ManaPercCap[0];
+	//if (mana_perc_cap) {
+	//	int curMana_cap = (max_mana * mana_perc_cap) / 100;
+	//	if (current_mana > curMana_cap || (spellbonuses.ManaPercCap[1] && current_mana > spellbonuses.ManaPercCap[1])) {
+	//		current_mana = curMana_cap;
+	//	}
+	//}
 	LogSpells("Client::CalcMaxMana() called for [{}] - returning [{}]", GetName(), max_mana);
 	return max_mana;
+}
+
+void Client::CBHandleTributeSyncingOfStats()
+{
+
+	int oldMana = cb_max_mana_minus_tribute;
+	int oldHp = cb_max_hp_minus_tribute;
+	int oldAC = cb_mitigation_ac_tribute;
+	int oldHaste = cb_haste_tribute;
+	int baseMana = CalcBaseMana();
+	int newMana = CBCalcBaseMana();
+	int baseHP = CalcBaseHP();
+	int newHP = CBCalcBaseHP();
+
+	int agi = GetAGI();
+	if (agi > 255) {
+		agi = 255 + (agi - 255) / 4;
+	}
+	agi = agi / 5;
+
+	int mit_diff = cb_mitigation_ac - mitigation_ac;
+	int hp_diff = newHP - baseHP;
+	int mana_diff = newMana - baseMana;
+	int haste_diff = agi;
+
+	if (mit_diff != oldAC || hp_diff != oldHp || mana_diff != oldMana || haste_diff != oldHaste){
+		const EQ::ItemInstance* inst = database.CreateItem(150000, 1);
+		if (inst == nullptr)
+			return;
+		EQ::ItemData data = *inst->GetItem();
+		data.HP = hp_diff;
+		data.Mana = mana_diff;
+		data.Haste = haste_diff;
+		data.AC = mit_diff;
+		EQ::ItemInstance copy{ *inst, data };
+		LogDebug("Client::SyncCBManaToClient() called for [{}] Mana - Base [{}] New [{}] Modifier: [{}]", GetName(), baseMana, newMana, data.Mana);
+		LogDebug("Client::SyncCBManaToClient() called for [{}] HP - Base [{}] New [{}] Modifier: [{}]", GetName(), baseHP, newHP, data.HP);
+		LogDebug("Client::SyncCBManaToClient() called for [{}] AC - Base [{}] New [{}] Modifier: [{}]", GetName(), mitigation_ac, cb_mitigation_ac, data.AC);
+		LogDebug("Client::SyncCBManaToClient() called for [{}] Haste - New [{}]", GetName(), data.Haste);
+		ToggleTribute(true);
+		PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN, copy, false);
+		if (Connected()){
+			cb_max_mana_minus_tribute = mana_diff;
+			cb_max_hp_minus_tribute = hp_diff;
+			cb_mitigation_ac_tribute = mit_diff;
+			cb_haste_tribute = haste_diff;
+			SendItemPacket(EQ::invslot::TRIBUTE_BEGIN, &copy, ItemPacketTributeItem);
+		}
+		safe_delete(inst);
+	}
+}
+
+int32 Client::CBCalcMaxMana()
+{
+	int totalMana;
+	switch (GetCasterClass()) {
+	case 'I':
+	case 'W': {
+		totalMana = (CBCalcBaseMana() + itembonuses.Mana + spellbonuses.Mana + aabonuses.Mana + GroupLeadershipAAManaEnhancement());
+		break;
+	}
+	case 'N': {
+		totalMana = 0;
+		break;
+	}
+	default: {
+		LogDebug("Invalid Class [{}] in CalcCBMaxMana", GetCasterClass());
+		totalMana = 0;
+		break;
+	}
+	}
+	if (totalMana < 0) {
+		totalMana = 0;
+	}
+	LogDebug("Client::CalcCBMaxMana() called for [{}] - returning [{}]", GetName(), totalMana);
+	cb_max_mana = totalMana;
+	return totalMana;
+}
+
+int32 Client::CBCalcMaxHp()
+{
+	float nd = 10000;
+	int totalHP = (CBCalcBaseHP() + itembonuses.HP);
+	//The AA desc clearly says it only applies to base hp..
+	//but the actual effect sent on live causes the client
+	//to apply it to (basehp + itemhp).. I will oblige to the client's whims over
+	//the aa description
+	nd += aabonuses.MaxHP;	//Natural Durability, Physical Enhancement, Planar Durability
+	totalHP = (float)totalHP * (float)nd / (float)10000; //this is to fix the HP-above-495k issue
+	totalHP += spellbonuses.HP + aabonuses.HP;
+	totalHP += GroupLeadershipAAHealthEnhancement();
+	totalHP += totalHP * ((spellbonuses.MaxHPChange + itembonuses.MaxHPChange) / 10000.0f);
+	if (current_hp > totalHP) {
+		current_hp = totalHP;
+	}
+	int hp_perc_cap = spellbonuses.HPPercCap[0];
+	if (hp_perc_cap) {
+		int curHP_cap = (totalHP * hp_perc_cap) / 100;
+		if (current_hp > curHP_cap || (spellbonuses.HPPercCap[1] && current_hp > spellbonuses.HPPercCap[1])) {
+
+			current_hp = curHP_cap;
+		}
+	}
+
+	// hack fix for client health not reflecting server value
+	last_max_hp = 0;
+	cb_max_hp = totalHP;
+	return totalHP;
+}
+
+int32 Client::CBCalcBaseHP() 
+{
+	int Cha = GetCHA();
+	int Str = GetSTR();
+	int Sta = GetSTA();
+	int Int = GetINT();
+	int Wis = GetWIS();
+
+	int sum = Cha * 2 + Str * 3 + Sta * 5 + Int + Wis;
+	if (sum > 255) {
+		sum = (sum - 255) / 2;
+		sum += 255;
+	}
+	int total = 5;
+	auto base_data = database.GetBaseData(GetLevel(), GetClass());
+	if (base_data) {
+		total += base_data->base_hp + (base_data->hp_factor * sum);
+		total += (GetHeroicSTA() * 5 + GetHeroicSTR() * 3 + GetHeroicCHA() * 2 + GetHeroicINT() + GetHeroicWIS());
+	}
+	return total;
+}
+
+int32 Client::CBCalcBaseMana()
+{
+	int32 max_m = 0;
+	int Wis = GetWIS();
+	int Cha = GetCHA();
+	int Int = GetINT();
+	int TotalRawStatCount = 0;
+	int ConvertedWisInt = 0;
+	LogDebug("Client::CalcCBBaseMana() called for [{}] - Int [{}] Wis [{}] Cha [{}]", GetName(), Int, Wis, Cha);
+	const BaseDataStruct* base_data = nullptr;
+	switch (GetCasterClass()) {
+		case 'I':
+		case 'W':
+			TotalRawStatCount = 3 * Int + 2 * Wis + Cha;
+			ConvertedWisInt = (((5 * (400 + TotalRawStatCount)) / 2) * 5 * GetLevel() / 400);
+			LogDebug("Client::CalcCBBaseMana() called for [{}] - Raw Weight [{}] Final [{}]", GetName(), TotalRawStatCount, ConvertedWisInt);
+			base_data = database.GetBaseData(GetLevel(), GetClass());
+			if (base_data) {
+				max_m = base_data->base_mana + (ConvertedWisInt * base_data->mana_factor) + (GetHeroicINT() * 10 + GetHeroicWIS() * 10 + GetHeroicCHA() * 5);
+			}
+			break;
+		case 'N': {
+			max_m = 0;
+			break;
+		}
+		default: {
+			LogDebug("Invalid Class [{}] in CalcCBBaseMana", GetCasterClass());
+			max_m = 0;
+			break;
+		}
+	}
+	#if EQDEBUG >= 11
+		LogDebug("Client::CalcCBBaseMana() called for [{}] - returning [{}]", GetName(), max_m);
+	#endif
+	return max_m;
 }
 
 int32 Client::CalcBaseMana()
@@ -730,10 +899,11 @@ int32 Client::CalcManaRegen(bool bCombat)
 						regen++;
 					if (skill >= 15)
 						regen += skill / 15;
-				}
-			}
-			if (old)
+				} 
+			} 
+			if (old) {
 				regen = std::max(regen, 2);
+			}
 		} else if (old) {
 			regen = std::max(regen, 1);
 		}

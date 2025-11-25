@@ -77,6 +77,8 @@ namespace EQ
 
 		ItemInstance(const ItemInstance& copy);
 
+		ItemInstance(const ItemInstance& copy, const ItemData& itemDataReplace);
+
 		~ItemInstance();
 
 		// Query item type

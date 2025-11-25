@@ -443,9 +443,9 @@ int32 Mob::Tune_MeleeMitigation(Mob* GM, Mob *attacker, int32 damage, int32 minh
 
 		if (attacker->IsClient()){
 			if (atk_override)
-				attack_rating = (atk_override + ((attacker->GetSTR() - 66) * 0.9) + (attacker->GetSkill(EQ::skills::SkillOffense)*1.345));
+				attack_rating = (atk_override + ((attacker->GetSTR()) * 0.9) + (attacker->GetSkill(EQ::skills::SkillOffense)*1.345));
 			else
-				attack_rating = ((attacker->CastToClient()->CalcATK() + add_atk) + ((attacker->GetSTR() - 66) * 0.9) + (attacker->GetSkill(EQ::skills::SkillOffense)*1.345));
+				attack_rating = ((attacker->CastToClient()->CalcATK() + add_atk) + ((attacker->GetSTR()) * 0.9) + (attacker->GetSkill(EQ::skills::SkillOffense)*1.345));
 
 		}
 		else{
@@ -467,7 +467,7 @@ int32 Mob::Tune_MeleeMitigation(Mob* GM, Mob *attacker, int32 damage, int32 minh
 				GM->Message(Chat::White, "# %i #### ATTACKER Leadership Bonus", attacker->CastToClient()->GroupLeadershipAAOffenseEnhancement());
 				GM->Message(Chat::White, "# %i #### ATTACKER Worn/Equip ATK Bonus", attacker->itembonuses.ATK);
 				GM->Message(Chat::White, "# %i #### ATTACKER Worn/Equip ATK Bonus", attacker->itembonuses.ATK);
-				GM->Message(Chat::White, "# %.2f #### ATTACKER Strength Stat ATK Bonus [Stat Amt: %i]", ((attacker->GetSTR()-66) * 0.9),attacker->GetSTR());
+				GM->Message(Chat::White, "# %.2f #### ATTACKER Strength Stat ATK Bonus [Stat Amt: %i]", ((attacker->GetSTR()) * 0.9),attacker->GetSTR());
 				GM->Message(Chat::White, "# %.2f #### ATTACKER Offensive Skill ATK Bonus [Stat Amt: %i]", (attacker->GetSkill(EQ::skills::SkillOffense)*1.345), attacker->GetSkill(EQ::skills::SkillOffense));
 			}
 				

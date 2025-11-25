@@ -114,6 +114,11 @@ bool Client::Process() {
 				HandleRespawnFromHover(0);
 		}
 
+		if (firstSync && Connected()) {
+			CalcBonuses();
+			firstSync = false;
+		}
+
 		if (IsTracking() && (ClientVersion() >= EQ::versions::ClientVersion::SoD) && TrackingTimer.Check())
 			DoTracking();
 
@@ -126,6 +131,7 @@ bool Client::Process() {
 		if (!is_client_moving && position_update_timer.Check()) {
 			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 		}
+
 
 		if (mana_timer.Check())
 			CheckManaEndUpdate();
@@ -507,10 +513,16 @@ bool Client::Process() {
 			DoManaRegen();
 			DoEnduranceRegen();
 			BuffProcess();
-
-			if (tribute_timer.Check()) {
-				ToggleTribute(true);	//re-activate the tribute.
+			if (cb_early_sync_count < 3) {
+				last_reported_mana = -1;
+				CheckManaEndUpdate();
+				cb_early_sync_count++;
 			}
+
+
+			//if (tribute_timer.Check()) {
+			//	ToggleTribute(true);	//re-activate the tribute.
+			//}
 
 			if (fishing_timer.Check()) {
 				GoFish();
@@ -536,6 +548,8 @@ bool Client::Process() {
 				ItemTimerCheck();
 			}
 		}
+
+
 	}
 
 	if (client_state == CLIENT_KICKED) {
@@ -1797,11 +1811,11 @@ void Client::DoHPRegen() {
 }
 
 void Client::DoManaRegen() {
-	if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0)
+	if (GetMana() >= GetMaxMana() && spellbonuses.ManaRegen >= 0)
 		return;
 
-	if (GetMana() < max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
-		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
+	if (GetMana() < GetMaxMana() && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
+		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, 5);
 
 	SetMana(GetMana() + CalcManaRegen());
 	CheckManaEndUpdate();

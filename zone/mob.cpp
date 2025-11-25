@@ -100,14 +100,14 @@ Mob::Mob(
 	attack_timer(2000),
 	attack_dw_timer(2000),
 	ranged_timer(2000),
-	tic_timer(6000),
+	tic_timer(3000),
 	mana_timer(2000),
 	spellend_timer(0),
 	rewind_timer(30000),
 	bindwound_timer(10000),
 	stunned_timer(0),
 	spun_timer(0),
-	bardsong_timer(6000),
+	bardsong_timer(2000),
 	gravity_timer(1000),
 	viral_timer(0),
 	m_FearWalkTarget(-999999.0f, -999999.0f, -999999.0f),
@@ -255,7 +255,7 @@ Mob::Mob(
 	INT               = in_int;
 	WIS               = in_wis;
 	CHA               = in_cha;
-	MR                = CR = FR = DR = PR = Corrup = 0;
+	MR                = CR = FR = DR = PR = Corrup = PhR = 0;
 	ExtraHaste        = 0;
 	bEnraged          = false;
 	shield_target     = nullptr;
@@ -516,6 +516,11 @@ Mob::~Mob()
 #ifdef BOTS
 	LeaveHealRotationTargetPool();
 #endif
+}
+
+bool Mob::IsCBStatsEligible()
+{
+	return IsClient() || (IsBot() && GetLevel() > 51);
 }
 
 uint32 Mob::GetAppearanceValue(EmuAppearance iAppearance) {
@@ -1345,9 +1350,9 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 	if (IsClient()) {
 
 		// delay to allow the client to catch up on buff states
-		if (max_hp != last_max_hp) {
+		if (GetMaxHP() != last_max_hp) {
 
-			last_max_hp = max_hp;
+			last_max_hp = GetMaxHP();
 			CastToClient()->hp_self_update_throttle_timer.Trigger();
 
 			return;
@@ -1363,7 +1368,7 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 					"Mob::SendHPUpdate :: Update HP of self (%s) HP: %i/%i last: %i/%i skip_self: %s",
 					this->GetCleanName(),
 					current_hp,
-					max_hp,
+					GetMaxHP(),
 					last_hp,
 					last_max_hp,
 					(skip_self ? "true" : "false")
@@ -2565,7 +2570,12 @@ bool Mob::CanThisClassDualWield(void) const {
 bool Mob::CanThisClassDoubleAttack(void) const
 {
 	if(!IsClient()) {
-		return(GetSkill(EQ::skills::SkillDoubleAttack) > 0);
+		if (IsBot()) {
+			return(GetSkill(EQ::skills::SkillDoubleAttack) > 0);
+		}
+		else {
+			return(GetSkill(EQ::skills::SkillDoubleAttack) > 0 && GetLevel() > 20);
+		}
 	} else {
 		if(aabonuses.GiveDoubleAttack || itembonuses.GiveDoubleAttack || spellbonuses.GiveDoubleAttack) {
 			return true;

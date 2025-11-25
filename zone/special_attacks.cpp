@@ -747,14 +747,14 @@ void Client::RangedAttack(Mob* other, bool CanDoubleAttack) {
 	DoArcheryAttackDmg(other, RangeWeapon, Ammo,0,0,0,0,0,0, AmmoItem, ammo_slot);
 
 	//EndlessQuiver AA base1 = 100% Chance to avoid consumption arrow.
-	int ChanceAvoidConsume = aabonuses.ConsumeProjectile + itembonuses.ConsumeProjectile + spellbonuses.ConsumeProjectile;
+	//int ChanceAvoidConsume = aabonuses.ConsumeProjectile + itembonuses.ConsumeProjectile + spellbonuses.ConsumeProjectile;
 
-	if (RangeItem->ExpendableArrow || !ChanceAvoidConsume || (ChanceAvoidConsume < 100 && zone->random.Int(0,99) > ChanceAvoidConsume)){
-		DeleteItemInInventory(ammo_slot, 1, true);
-		LogCombat("Consumed one arrow from slot [{}]", ammo_slot);
-	} else {
-		LogCombat("Endless Quiver prevented ammo consumption");
-	}
+	//if (RangeItem->ExpendableArrow || !ChanceAvoidConsume || (ChanceAvoidConsume < 100 && zone->random.Int(0,99) > ChanceAvoidConsume)){
+	//	DeleteItemInInventory(ammo_slot, 1, true);
+	//	LogCombat("Consumed one arrow from slot [{}]", ammo_slot);
+	//} else {
+	//	LogCombat("Endless Quiver prevented ammo consumption");
+	//}
 
 	CheckIncreaseSkill(EQ::skills::SkillArchery, GetTarget(), -15);
 	CommonBreakInvisibleFromCombat();
@@ -1296,8 +1296,8 @@ void Client::ThrowingAttack(Mob* other, bool CanDoubleAttack) { //old was 51
 
 	DoThrowingAttackDmg(other, RangeWeapon, item);
 
-	//consume ammo
-	DeleteItemInInventory(ammo_slot, 1, true);
+	////consume ammo
+	//DeleteItemInInventory(ammo_slot, 1, true);
 	CommonBreakInvisibleFromCombat();
 }
 
@@ -1549,14 +1549,14 @@ void NPC::DoClassAttacks(Mob *target) {
 		switch(GetClass()){
 			case SHADOWKNIGHT: case SHADOWKNIGHTGM:{
 				if (CastSpell(SPELL_NPC_HARM_TOUCH, target->GetID())) {
-					knightreuse = HarmTouchReuseTime * 1000;
+					knightreuse = 330 * 1000;
 					}
 				break;
 			}
 			case PALADIN: case PALADINGM:{
 				if(GetHPRatio() < 20) {
 					if (CastSpell(SPELL_LAY_ON_HANDS, GetID())) {
-						knightreuse = LayOnHandsReuseTime * 1000;
+						knightreuse = 330 * 1000;
 					}
 				} else {
 					knightreuse = 2000; //Check again in two seconds.
@@ -1927,8 +1927,8 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 				else {
 					tauntchance += static_cast<float>(level_difference) * 5.0f;
-					if (tauntchance > 65)
-						tauntchance = 65.0f;
+			/*		if (tauntchance > 65)
+						tauntchance = 65.0f;*/
 				}
 			}
 
@@ -1949,7 +1949,8 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 		if (Success) {
 			if (hate_top && hate_top != this) {
-				int newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + 1 + bonus_hate;
+				int currentTop = who->GetNPCHate(hate_top);
+				int newhate = (currentTop - who->GetNPCHate(this)) + std::max(int(currentTop / 10.0f), 1) + bonus_hate;
 				who->CastToNPC()->AddToHateList(this, newhate);
 				Success = true;
 			} else {

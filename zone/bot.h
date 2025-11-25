@@ -485,6 +485,15 @@ public:
 	inline virtual int32	GetINT()	const { return INT; }
 	inline virtual int32	GetWIS()	const { return WIS; }
 	inline virtual int32	GetCHA()	const { return CHA; }
+
+	inline virtual int32	GetCBSTR()	const { return GetSTR() - 150; }
+	inline virtual int32	GetCBSTA()	const { return GetSTA() - 150; }
+	inline virtual int32	GetCBDEX()	const { return GetDEX() - 150; }
+	inline virtual int32	GetCBAGI()	const { return GetAGI() - 150; }
+	inline virtual int32	GetCBINT()	const { return GetINT() - 150; }
+	inline virtual int32	GetCBWIS()	const { return GetWIS() - 150; }
+	inline virtual int32	GetCBCHA()	const { return GetCHA()  - 150; }
+
 	inline virtual int32	GetMR()	const { return MR; }
 	inline virtual int32	GetFR()	const { return FR; }
 	inline virtual int32	GetDR()	const { return DR; }

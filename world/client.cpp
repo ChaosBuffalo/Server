@@ -1906,7 +1906,7 @@ void Client::SetClassStartingSkills(PlayerProfile_Struct *pp)
 				i == EQ::skills::SkillAlcoholTolerance || i == EQ::skills::SkillBindWound)
 				continue;
 
-			pp->skills[i] = database.GetSkillCap(pp->class_, (EQ::skills::SkillType)i, 1);
+			pp->skills[i] = content_db.GetSkillCap(pp->class_, (EQ::skills::SkillType)i, 1);
 		}
 	}
 
@@ -2160,6 +2160,11 @@ bool Client::StoreCharacter(
 		}
 		i++;
 	}
+	std::string aaquery = StringFormat(
+		"INSERT INTO `character_alternate_abilities` (id, aa_id, aa_value, charges) VALUES (%u, 20700, 1, 0)",
+		character_id
+	);
+	database.QueryDatabase(aaquery);
 
 	return true;
 }

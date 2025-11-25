@@ -61,53 +61,54 @@ public:
 std::map<uint32, TributeData> tribute_list;
 
 void Client::ToggleTribute(bool enabled) {
-	if(enabled) {
-		//make sure they have enough points to be activating this...
-		int r;
-		uint32 cost = 0;
-		uint32 level = GetLevel();
-		for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
-			uint32 tid = m_pp.tributes[r].tribute;
-			if(tid == TRIBUTE_NONE)
-				continue;
+	//if(enabled) {
+	//	//make sure they have enough points to be activating this...
+	//	int r;
+	//	uint32 cost = 0;
+	//	uint32 level = GetLevel();
+	//	for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
+	//		uint32 tid = m_pp.tributes[r].tribute;
+	//		if(tid == TRIBUTE_NONE)
+	//			continue;
 
-			if(tribute_list.count(tid) != 1)
-				continue;
+	//		if(tribute_list.count(tid) != 1)
+	//			continue;
 
-			if(m_pp.tributes[r].tier >= MAX_TRIBUTE_TIERS) {
-				m_pp.tributes[r].tier = 0;	//sanity check.
-				continue;
-			}
+	//		if(m_pp.tributes[r].tier >= MAX_TRIBUTE_TIERS) {
+	//			m_pp.tributes[r].tier = 0;	//sanity check.
+	//			continue;
+	//		}
 
-			TributeData &d = tribute_list[tid];
+	//		TributeData &d = tribute_list[tid];
 
-			TributeLevel_Struct &tier = d.tiers[m_pp.tributes[r].tier];
+	//		TributeLevel_Struct &tier = d.tiers[m_pp.tributes[r].tier];
 
-			if(level < tier.level) {
-				Message(0, "You are not high enough level to activate this tribute!");
-				ToggleTribute(false);
-				continue;
-			}
+	//		if(level < tier.level) {
+	//			Message(0, "You are not high enough level to activate this tribute!");
+	//			ToggleTribute(false);
+	//			continue;
+	//		}
 
-			cost += tier.cost;
-		}
+	//		cost += tier.cost;
+	//	}
 
-		if(cost > m_pp.tribute_points) {
-			Message(Chat::Red, "You do not have enough tribute points to activate your tribute!");
-			ToggleTribute(false);
-			return;
-		}
-		AddTributePoints(0-cost);
+	//	if(cost > m_pp.tribute_points) {
+	//		Message(Chat::Red, "You do not have enough tribute points to activate your tribute!");
+	//		ToggleTribute(false);
+	//		return;
+	//	}
+	//	AddTributePoints(0-cost);
 
-		//reset their timer, since they just paid for a full duration
-		m_pp.tribute_time_remaining = Tribute_duration;	//full duration
-		tribute_timer.Start(m_pp.tribute_time_remaining);
+	//	//reset their timer, since they just paid for a full duration
+	//	m_pp.tribute_time_remaining = Tribute_duration;	//full duration
+	//	tribute_timer.Start(m_pp.tribute_time_remaining);
 
-		m_pp.tribute_active = 1;
-	} else {
-		m_pp.tribute_active = 0;
-		tribute_timer.Disable();
-	}
+	//	m_pp.tribute_active = 1;
+	//} else {
+	//	m_pp.tribute_active = 0;
+	//	tribute_timer.Disable();
+	//}
+	m_pp.tribute_active = enabled;
 	DoTributeUpdate();
 }
 
@@ -130,53 +131,53 @@ void Client::DoTributeUpdate() {
 	}
 	QueuePacket(&outapp);
 
-	SendTributeTimer();
+	//SendTributeTimer();
 
-	if(m_pp.tribute_active) {
-		//send and equip tribute items...
-		for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
-			uint32 tid = m_pp.tributes[r].tribute;
-			if(tid == TRIBUTE_NONE) {
-				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
-					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
-				continue;
-			}
+	//if(m_pp.tribute_active) {
+	//	//send and equip tribute items...
+	//	for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
+	//		uint32 tid = m_pp.tributes[r].tribute;
+	//		//if(tid == TRIBUTE_NONE) {
+	//		//	if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+	//		//		DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
+	//		//	continue;
+	//		//}
 
-			if(tribute_list.count(tid) != 1) {
-				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
-					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
-				continue;
-			}
+	//		//if(tribute_list.count(tid) != 1) {
+	//		//	if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+	//		//		DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
+	//		//	continue;
+	//		//}
 
-			//sanity check
-			if(m_pp.tributes[r].tier >= MAX_TRIBUTE_TIERS) {
-				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
-					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
-				m_pp.tributes[r].tier = 0;
-				continue;
-			}
+	//		////sanity check
+	//		//if (m_pp.tributes[r].tier >= MAX_TRIBUTE_TIERS) {
+	//		//	if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+	//		//		DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
+	//		//	m_pp.tributes[r].tier = 0;
+	//		//	continue;
+	//		//}
 
-			TributeData &d = tribute_list[tid];
-			TributeLevel_Struct &tier = d.tiers[m_pp.tributes[r].tier];
-			uint32 item_id = tier.tribute_item_id;
+	//		TributeData &d = tribute_list[tid];
+	//		TributeLevel_Struct &tier = d.tiers[m_pp.tributes[r].tier];
+	//		uint32 item_id = tier.tribute_item_id;
 
-			//summon the item for them
-			const EQ::ItemInstance* inst = database.CreateItem(item_id, 1);
-			if(inst == nullptr)
-				continue;
+	//		//summon the item for them
+	//		const EQ::ItemInstance* inst = database.CreateItem(item_id, 1);
+	//		if(inst == nullptr)
+	//			continue;
 
-			PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, *inst, false);
-			SendItemPacket(EQ::invslot::TRIBUTE_BEGIN + r, inst, ItemPacketTributeItem);
-			safe_delete(inst);
-		}
-	} else {
-		//unequip tribute items...
-		for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
-			if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
-				DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
-		}
-	}
-	CalcBonuses();
+	//		PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, *inst, false);
+	//		SendItemPacket(EQ::invslot::TRIBUTE_BEGIN + r, inst, ItemPacketTributeItem);
+	//		safe_delete(inst);
+	//	}
+	//} else {
+	//	//unequip tribute items...
+	//	for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
+	//		if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+	//			DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
+	//	}
+	//}
+	//CalcBonuses();
 }
 
 void Client::SendTributeTimer() {

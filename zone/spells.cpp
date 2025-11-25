@@ -1047,7 +1047,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 						bardsong_target_id = GetID();
 					else
 						bardsong_target_id = spell_target->GetID();
-					bardsong_timer.Start(6000);
+					bardsong_timer.Start(2000);
 				}
 				LogSpells("Bard song [{}] started: slot [{}], target id [{}]", bardsong, (int) bardsong_slot, bardsong_target_id);
 				bard_song_mode = true;
@@ -1070,6 +1070,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 			if(attacked_count > 15) attacked_count = 15;
 
 			float channelchance, distance_moved, d_x, d_y, distancemod;
+			bool didntMove = true;
 
 			if(IsClient())
 			{
@@ -1082,7 +1083,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					channelbonuses += spellbonuses.ChannelChanceSpells + itembonuses.ChannelChanceSpells + aabonuses.ChannelChanceSpells;
 
 				// max 93% chance at 252 skill
-				channelchance = 30 + GetSkill(EQ::skills::SkillChanneling) / 400.0f * 100;
+				channelchance = 30 + (GetSkill(EQ::skills::SkillChanneling) + (GetSTA() / 4)) / 400.0f * 100;
 				channelchance -= attacked_count * 2;
 				channelchance += channelchance * channelbonuses / 100.0f;
 			}
@@ -1096,7 +1097,8 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					channelbonuses += spellbonuses.ChannelChanceSpells + itembonuses.ChannelChanceSpells + aabonuses.ChannelChanceSpells;
 
 				// max 93% chance at 252 skill
-				channelchance = 30 + GetSkill(EQ::skills::SkillChanneling) / 400.0f * 100;
+				Bot* bot = CastToBot();
+				channelchance = 30 + (GetSkill(EQ::skills::SkillChanneling) + (bot->GetCBSTA() / 4)) / 400.0f * 100;
 				channelchance -= attacked_count * 2;
 				channelchance += channelchance * channelbonuses / 100.0f;
 			}
@@ -1119,11 +1121,12 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					distance_moved = d_x * d_x + d_y * d_y;
 					// if you moved 1 unit, that's 25% off your chance to regain.
 					// if you moved 2, you lose 100% off your chance
-					distancemod = distance_moved * 25;
+					distancemod = distance_moved * 15;
 					channelchance -= distancemod;
 				}
 				else
 				{
+					didntMove = false;
 					channelchance = 0;
 				}
 			}
@@ -1132,8 +1135,14 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 
 			if(!spells[spell_id].uninterruptable && zone->random.Real(0, 100) > channelchance) {
 				LogSpells("Casting of [{}] canceled: interrupted", spell_id);
-				InterruptSpell();
-				return;
+				int endCost = attacked_count * 10;
+				if (IsCBStatsEligible() && didntMove && GetEndurancePercent() > endCost) {
+					SetEndurance(GetEndurance() - int((GetEndurance() * (endCost / 100.0f))));
+				}
+				else {
+					InterruptSpell();
+					return;
+				}
 			}
 			// if we got here, we regained concentration
 			regain_conc = true;
@@ -1279,18 +1288,18 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					LogSpells("Spell [{}]: Consuming [{}] of spell component item id [{}]", spell_id, component_count, component);
 					// Components found, Deleting
 					// now we go looking for and deleting the items one by one
-					for(int s = 0; s < component_count; s++)
-					{
-						inv_slot_id = c->GetInv().HasItem(component, 1, invWhereWorn|invWherePersonal);
-						if(inv_slot_id != -1)
-						{
-							c->DeleteItemInInventory(inv_slot_id, 1, true);
-						}
-						else
-						{	// some kind of error in the code if this happens
-							c->Message(Chat::Red, "ERROR: reagent item disappeared while processing?");
-						}
-					}
+					//for(int s = 0; s < component_count; s++)
+					//{
+					//	inv_slot_id = c->GetInv().HasItem(component, 1, invWhereWorn|invWherePersonal);
+					//	if(inv_slot_id != -1)
+					//	{
+					//		c->DeleteItemInInventory(inv_slot_id, 1, true);
+					//	}
+					//	else
+					//	{	// some kind of error in the code if this happens
+					//		c->Message(Chat::Red, "ERROR: reagent item disappeared while processing?");
+					//	}
+					//}
 				}
 				} // end missingreags/consumption
 			} // end `focus did not help us`
@@ -1437,7 +1446,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 			c->MemorizeSpell(static_cast<uint32>(slot), spell_id, memSpellSpellbar);
 
 			// this tells the client that casting may happen again
-			SetMana(GetMana());
+			c->SetMana(GetMana());
 
 			// skills
 			if (EQ::skills::IsCastingSkill(spells[spell_id].skill)) {
