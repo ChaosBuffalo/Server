@@ -11,6 +11,7 @@ SET(zone_sources
 	beacon.cpp
 	bonuses.cpp
 	bot.cpp
+	bot_class_attacks.cpp
 	bot_command.cpp
 	bot_database.cpp
 	botspellsai.cpp
@@ -166,6 +167,7 @@ SET(zone_headers
 	basic_functions.h
 	beacon.h
 	bot.h
+	bot_class_attacks.h
 	bot_command.h
 	bot_database.h
 	bot_structs.h

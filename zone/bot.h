@@ -95,6 +95,7 @@ enum BotCastingChanceConditional : uint8
 	cntHSND = 16
 };
 
+class BotClassAttack;
 
 class Bot : public NPC {
 	friend class Mob;
@@ -666,6 +667,8 @@ private:
 	int32	max_end;
 	int32	end_regen;
 	uint32 timers[MaxTimer];
+
+	BotClassAttack* classAttack;
 
 	Timer m_evade_timer; // can be moved to pTimers at some point
 	Timer m_alt_combat_hate_timer;

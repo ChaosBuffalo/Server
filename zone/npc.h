@@ -584,7 +584,9 @@ protected:
 
 	//pet crap:
 	uint16	pet_spell_id;
+public:
 	bool	taunting;
+protected:
 	Timer	taunt_timer;		//for pet taunting
 
 	bool npc_aggro;

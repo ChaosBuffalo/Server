@@ -303,10 +303,10 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 		else if (level > 40 && level <= 50) {
 			aaPerLevel = 20;
 		}
-		else if (level > 50 && level <= 60) {
+		else if (level > 50 && level <= 55) {
 			aaPerLevel = 25;
 		}
-		else if (level > 60 && level < 70) {
+		else if (level > 55 && level < 70) {
 			aaPerLevel = 30;
 		}
 		else {
@@ -525,7 +525,7 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 	}
 
 	add_aaxp = add_exp;
-	add_exp = GetEXP() + add_exp;
+	add_exp = add_exp;
 }
 
 void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
@@ -536,7 +536,7 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	uint32 aaexp = 0;
 
 	if (m_epp.perAA<0 || m_epp.perAA>100)
-		m_epp.perAA=100;	// stop exploit with sanity check
+		m_epp.perAA=0;	// stop exploit with sanity check
 
 	// Calculate regular XP
 	CalculateExp(in_add_exp, exp, aaexp, conlevel, resexp);
@@ -577,6 +577,8 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	//	aaexp = 0;
 	//	m_epp.perAA = 0;
 	//}
+
+	exp = GetEXP() + exp * (100 - m_epp.perAA) / 100;
 
 	// Now update our character's normal and AA xp
 	SetEXP(exp, aaexp, resexp);
@@ -1061,12 +1063,12 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 	unsigned int i;
 	uint32 groupexp = exp;
 	uint8 membercount = 0;
-	uint8 maxlevel = 1;
+	uint8 minlevel = 100;
 
 	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (members[i] != nullptr) {
-			if(members[i]->GetLevel() > maxlevel)
-				maxlevel = members[i]->GetLevel();
+			if(members[i]->GetLevel() < minlevel)
+				minlevel = members[i]->GetLevel();
 
 			membercount++;
 		}
@@ -1082,7 +1084,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 	//if(membercount > 1 &&  membercount <= 6)
 	//	groupexp += (uint32)((float)exp * groupmod * (RuleR(Character, GroupExpMultiplier)));
 
-	int conlevel = Mob::GetLevelCon(maxlevel, other->GetLevel());
+	int conlevel = Mob::GetLevelCon(minlevel, other->GetLevel());
 	if(conlevel == CON_GRAY)
 		return;	//no exp for greenies...
 
@@ -1094,14 +1096,14 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 		{
 			Client *cmember = members[i]->CastToClient();
 			// add exp + exp cap
-			int16 diff = cmember->GetLevel() - maxlevel;
+			int16 diff = minlevel - cmember->GetLevel();
 			int16 maxdiff = -(cmember->GetLevel()*15/10 - cmember->GetLevel());
 				if(maxdiff > -5)
 					maxdiff = -5;
 			if (diff >= (maxdiff)) { /*Instead of person who killed the mob, the person who has the highest level in the group*/
-				uint32 tmp = (cmember->GetLevel()+3) * (cmember->GetLevel()+3) * 75 * 35 / 10;
+				//uint32 tmp = (cmember->GetLevel()+3) * (cmember->GetLevel()+3) * 75 * 35 / 10;
 				uint32 tmp2 = groupexp / 2;
-				cmember->AddEXP( tmp < tmp2 ? tmp : tmp2, conlevel );
+				cmember->AddEXP( tmp2, conlevel );
 			}
 		}
 	}

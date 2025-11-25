@@ -68,6 +68,9 @@ enum class eSpecialAttacks : int {
 };
 
 class Mob : public Entity {
+	friend class BotClassAttack;
+
+
 public:
 	enum CLIENT_CONN_STATUS { CLIENT_CONNECTING, CLIENT_CONNECTED, CLIENT_LINKDEAD,
 						CLIENT_KICKED, DISCONNECTED, CLIENT_ERROR, CLIENT_CONNECTINGALL };

@@ -1256,10 +1256,16 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, uint
 				}
 
 				dmg = dmg <= 0 ? 1 : dmg;
-				if (IsCBStatsEligible() && weapon_item->GetItem()->IsType2HWeapon()) {
-					double damageBonus = zone->random.Real(1.25, 3.0);
-					dmg = int(dmg * damageBonus);
-
+				if (IsCBStatsEligible()) {
+					if (weapon_item->GetItem()->IsType2HWeapon())
+					{
+						double damageBonus = zone->random.Real(1.25, 3.0);
+						dmg = int(dmg * damageBonus);
+					}
+					else {
+						double damageBonus = zone->random.Real(1.25, 2.0);
+						dmg = int(dmg * damageBonus);
+					}
 				}
 			}
 		}
@@ -2330,7 +2336,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	Mob* killer = GetHateDamageTop(this);
 
-	entity_list.RemoveFromTargets(this, true);
+	entity_list.RemoveFromTargets(this, p_depop);
 
 	if (p_depop == true)
 		return false;
@@ -2847,18 +2853,18 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 
 		break;
 	}
-	if (IsBot()) {
-		auto botSelf = CastToBot();
-		if (botSelf && botSelf->GetBotOwner()) {
-			auto owner = botSelf->GetBotOwner()->CastToClient();
-			if (owner && !owner->IsDead() && owner->InZone()) {
-				if (!owner->hate_list.IsEntOnHateList(other)) {
-					owner->hate_list.AddEntToHateList(other, 0, 0, false, true);
-					owner->AddAutoXTarget(other); // this was being called on dead/out-of-zone clients
-				}
-			}
-		}
-	}
+	//if (IsBot()) {
+	//	auto botSelf = CastToBot();
+	//	if (botSelf && botSelf->GetBotOwner()) {
+	//		auto owner = botSelf->GetBotOwner()->CastToClient();
+	//		if (owner && !owner->IsDead() && owner->InZone()) {
+	//			if (!owner->hate_list.IsEntOnHateList(other)) {
+	//				owner->hate_list.AddEntToHateList(other, 0, 0, false, true);
+	//				owner->AddAutoXTarget(other); // this was being called on dead/out-of-zone clients
+	//			}
+	//		}
+	//	}
+	//}
 #endif //BOTS
 
 	// if other is a merc, add the merc client to the hate list

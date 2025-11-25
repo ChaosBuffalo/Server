@@ -25,6 +25,7 @@
 #include "lua_parser.h"
 #include "../common/string_util.h"
 #include "../common/say_link.h"
+#include "bot_class_attacks.h"
 
 extern volatile bool is_zone_loaded;
 
@@ -401,13 +402,37 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 		SetHP(max_hp/5);
 		SetMana(0);
 		BuffFadeAll();
-		SpellOnTarget(756, this); // Rezz effects
+		//SpellOnTarget(756, this); // Rezz effects
 	}
 
 	if(current_mana > max_mana)
 		current_mana = max_mana;
 
 	cur_end = max_end;
+
+	switch (GetClass()) {
+		case PALADIN:
+		case SHADOWKNIGHT:
+			classAttack = new KnightClassAttack(this);
+			break;
+		case WARRIOR:
+		case RANGER:
+		case BEASTLORD:
+			classAttack = new BotClassAttack(this);
+			break;
+		case MONK:
+			classAttack = new MonkAttack(this);
+			break;
+		case BERSERKER:
+			classAttack = new BerserkerAttack(this);
+			break;
+		case ROGUE:
+			classAttack = new RogueAttack(this);
+			break;
+		default:
+			classAttack = new EmptyAttack(this);
+			break;
+	}
 }
 
 Bot::~Bot() {
@@ -421,6 +446,10 @@ Bot::~Bot() {
 		GetPet()->Depop();
 
 	entity_list.RemoveBot(GetID());
+
+	if (classAttack != nullptr) {
+		delete classAttack;
+	}
 }
 
 void Bot::SetBotID(uint32 botID) {
@@ -5167,7 +5196,7 @@ bool Bot::Attack(Mob* other, int Hand, bool FromRiposte, bool IsStrikethrough, b
 	if (my_hit.base_damage > 1)
 		hate = my_hit.base_damage;
 
-	if (IsWarriorClass()) {
+	if (BotClassAttack::IsTankingClass(this)) {
 		hate *= 3;
 	}
 
@@ -6444,288 +6473,9 @@ void Bot::RogueAssassinate(Mob* other) {
 void Bot::DoClassAttacks(Mob *target, bool IsRiposte) {
 	if(!target || spellend_timer.Enabled() || IsFeared() || IsStunned() || IsMezzed() || DivineAura() || GetHP() < 0 || !IsAttackAllowed(target))
 		return;
-
-	bool taunt_time = taunt_timer.Check();
-	bool ca_time = classattack_timer.Check(false);
-	bool ma_time = monkattack_timer.Check(false);
-	bool ka_time = knightattack_timer.Check(false);
-
-	if (taunt_time) {
-
-		// Bots without this skill shouldn't be 'checking' on this timer..let's just disable it and avoid the extra IsAttackAllowed() checks
-		// Note: this is done here instead of NPC::ctor() because taunt skill can be acquired during level ups (the timer is re-enabled in CalcBotStats())
-		if (!GetSkill(EQ::skills::SkillTaunt)) {
-
-			taunt_timer.Disable();
-			return;
-		}
-
-		if (!IsAttackAllowed(target)) {
-			return;
-		}
+	if (classAttack) {
+		classAttack->PerformAttack(target, IsRiposte);
 	}
-
-	if ((ca_time || ma_time || ka_time) && !IsAttackAllowed(target)) {
-		return;
-	}
-
-	if(ka_time){
-		
-		switch(GetClass()){
-			case SHADOWKNIGHT: {
-				CastSpell(SPELL_NPC_HARM_TOUCH, target->GetID());
-				knightattack_timer.Start(HarmTouchReuseTime * 1000);
-
-				break;
-			}
-			case PALADIN: {
-				if(GetHPRatio() < 20) {
-					CastSpell(SPELL_LAY_ON_HANDS, GetID());
-					knightattack_timer.Start(LayOnHandsReuseTime * 1000);
-				}
-				else {
-					knightattack_timer.Start(2000);
-				}
-
-				break;
-			}
-			default: {
-				break;
-			}
-		}
-	}
-
-	if(taunting && target && target->IsNPC() && taunt_time) {
-		if(GetTarget() && GetTarget()->GetHateTop() && GetTarget()->GetHateTop() != this) {
-			BotGroupSay(this, "Taunting %s", target->GetCleanName());
-			Taunt(target->CastToNPC(), false);
-			taunt_timer.Start(TauntReuseTime * 1000);
-		}
-	}
-
-	if (ma_time) {
-		switch (GetClass()) {
-		case MONK: {
-			int reuse = (MonkSpecialAttack(target, EQ::skills::SkillTigerClaw) - 1);
-			
-			// Live AA - Technique of Master Wu
-			int wuchance = itembonuses.DoubleSpecialAttack + spellbonuses.DoubleSpecialAttack + aabonuses.DoubleSpecialAttack;
-
-			if (wuchance) {
-				const int MonkSPA[5] = {
-					EQ::skills::SkillFlyingKick,
-					EQ::skills::SkillDragonPunch,
-					EQ::skills::SkillEagleStrike,
-					EQ::skills::SkillTigerClaw,
-					EQ::skills::SkillRoundKick
-				};
-				int extra = 0;
-				// always 1/4 of the double attack chance, 25% at rank 5 (100/4)
-				while (wuchance > 0) {
-					if (zone->random.Roll(wuchance)) {
-						++extra;
-					}
-					else {
-						break;
-					}
-					wuchance /= 4;
-				}
-
-				Mob* bo = GetBotOwner();
-				if (bo && bo->IsClient() && bo->CastToClient()->GetBotOption(Client::booMonkWuMessage)) {
-
-					bo->Message(
-						GENERIC_EMOTE,
-						"The spirit of Master Wu fills %s!  %s gains %d additional attack(s).",
-						GetCleanName(),
-						GetCleanName(),
-						extra
-					);
-				}
-
-				auto classic = RuleB(Combat, ClassicMasterWu);
-				while (extra) {
-					MonkSpecialAttack(GetTarget(), (classic ? MonkSPA[zone->random.Int(0, 4)] : EQ::skills::SkillTigerClaw));
-					--extra;
-				}
-			}
-
-			float HasteModifier = (GetHaste() * 0.01f);
-			monkattack_timer.Start((reuse * 1000) / HasteModifier);
-
-			break;
-		}
-		default:
-			break;;
-		}
-	}
-
-	if (!ca_time) {
-		return;
-	}
-
-	float HasteModifier = (GetHaste() * 0.01f);
-	uint16 skill_to_use = -1;
-	int level = GetLevel();
-	int reuse = (TauntReuseTime * 1000);
-	bool did_attack = false;
-	switch(GetClass()) {
-		case WARRIOR:
-			if(level >= RuleI(Combat, NPCBashKickLevel)){
-				bool canBash = false;
-				if ((GetRace() == OGRE || GetRace() == TROLL || GetRace() == BARBARIAN) || (m_inv.GetItem(EQ::invslot::slotSecondary) && m_inv.GetItem(EQ::invslot::slotSecondary)->GetItem()->ItemType == EQ::item::ItemTypeShield) || (m_inv.GetItem(EQ::invslot::slotPrimary) && m_inv.GetItem(EQ::invslot::slotPrimary)->GetItem()->IsType2HWeapon() && GetAA(aa2HandBash) >= 1))
-					canBash = true;
-
-				if(!canBash || zone->random.Int(0, 100) > 25)
-					skill_to_use = EQ::skills::SkillKick;
-				else
-					skill_to_use = EQ::skills::SkillBash;
-			}
-		case RANGER:
-		case BEASTLORD:
-			skill_to_use = EQ::skills::SkillKick;
-			break;
-		case BERSERKER:
-			skill_to_use = EQ::skills::SkillFrenzy;
-			break;
-		case CLERIC:
-		case SHADOWKNIGHT:
-		case PALADIN:
-			if(level >= RuleI(Combat, NPCBashKickLevel)){
-				if ((GetRace() == OGRE || GetRace() == TROLL || GetRace() == BARBARIAN) || (m_inv.GetItem(EQ::invslot::slotSecondary) && m_inv.GetItem(EQ::invslot::slotSecondary)->GetItem()->ItemType == EQ::item::ItemTypeShield) || (m_inv.GetItem(EQ::invslot::slotPrimary) && m_inv.GetItem(EQ::invslot::slotPrimary)->GetItem()->IsType2HWeapon() && GetAA(aa2HandBash) >= 1))
-					skill_to_use = EQ::skills::SkillBash;
-			}
-			break;
-		case MONK:
-			if (GetLevel() >= 30) {
-				skill_to_use = EQ::skills::SkillFlyingKick;
-			}
-			else if (GetLevel() >= 25) {
-				skill_to_use = EQ::skills::SkillDragonPunch;
-			}
-			else if (GetLevel() >= 20) {
-				skill_to_use = EQ::skills::SkillEagleStrike;
-			}
-			else if (GetLevel() >= 5) {
-				skill_to_use = EQ::skills::SkillRoundKick;
-			}
-			else {
-				skill_to_use = EQ::skills::SkillKick;
-			}
-
-			break;
-		case ROGUE:
-			skill_to_use = EQ::skills::SkillBackstab;
-			break;
-	}
-
-	if(skill_to_use == -1)
-		return;
-
-	int dmg = GetBaseSkillDamage(static_cast<EQ::skills::SkillType>(skill_to_use), GetTarget());
-
-	if (skill_to_use == EQ::skills::SkillBash) {
-		if (target != this) {
-			DoAnim(animTailRake);
-			if (GetWeaponDamage(target, GetBotItem(EQ::invslot::slotSecondary)) <= 0 && GetWeaponDamage(target, GetBotItem(EQ::invslot::slotShoulders)) <= 0)
-				dmg = DMG_INVULNERABLE;
-
-			reuse = (BashReuseTime * 1000);
-			DoSpecialAttackDamage(target, EQ::skills::SkillBash, dmg, 0, -1, reuse);
-			did_attack = true;
-		}
-	}
-
-	if (skill_to_use == EQ::skills::SkillFrenzy) {
-		int AtkRounds = 3;
-		DoAnim(anim2HSlashing);
-
-		reuse = (FrenzyReuseTime * 1000);
-		did_attack = true;
-		while(AtkRounds > 0) {
-			if (GetTarget() && (AtkRounds == 1 || zone->random.Int(0, 100) < 75)) {
-				DoSpecialAttackDamage(GetTarget(), EQ::skills::SkillFrenzy, dmg, 0, dmg, reuse, true);
-			}
-
-			AtkRounds--;
-		}
-	}
-
-	if (skill_to_use == EQ::skills::SkillKick) {
-		if(target != this) {
-			DoAnim(animKick);
-			if (GetWeaponDamage(target, GetBotItem(EQ::invslot::slotFeet)) <= 0)
-				dmg = DMG_INVULNERABLE;
-
-			reuse = (KickReuseTime * 1000);
-			DoSpecialAttackDamage(target, EQ::skills::SkillKick, dmg, 0, -1, reuse);
-			did_attack = true;
-		}
-	}
-
-	if (
-		skill_to_use == EQ::skills::SkillFlyingKick ||
-		skill_to_use == EQ::skills::SkillDragonPunch ||
-		skill_to_use == EQ::skills::SkillEagleStrike ||
-		skill_to_use == EQ::skills::SkillRoundKick
-	) {
-		reuse = (MonkSpecialAttack(target, skill_to_use) - 1);
-		
-		// Live AA - Technique of Master Wu
-		int wuchance = itembonuses.DoubleSpecialAttack + spellbonuses.DoubleSpecialAttack + aabonuses.DoubleSpecialAttack;
-
-		if (wuchance) {
-			const int MonkSPA[5] = {
-				EQ::skills::SkillFlyingKick,
-				EQ::skills::SkillDragonPunch,
-				EQ::skills::SkillEagleStrike,
-				EQ::skills::SkillTigerClaw,
-				EQ::skills::SkillRoundKick
-			};
-			int extra = 0;
-			// always 1/4 of the double attack chance, 25% at rank 5 (100/4)
-			while (wuchance > 0) {
-				if (zone->random.Roll(wuchance)) {
-					++extra;
-				}
-				else {
-					break;
-				}
-				wuchance /= 4;
-			}
-
-			Mob* bo = GetBotOwner();
-			if (bo && bo->IsClient() && bo->CastToClient()->GetBotOption(Client::booMonkWuMessage)) {
-
-				bo->Message(
-					GENERIC_EMOTE,
-					"The spirit of Master Wu fills %s!  %s gains %d additional attack(s).",
-					GetCleanName(),
-					GetCleanName(),
-					extra
-				);
-			}
-
-			auto classic = RuleB(Combat, ClassicMasterWu);
-			while (extra) {
-				MonkSpecialAttack(GetTarget(), (classic ? MonkSPA[zone->random.Int(0, 4)] : skill_to_use));
-				--extra;
-			}
-		}
-
-		reuse *= 1000;
-		did_attack = true;
-	}
-
-	if (skill_to_use == EQ::skills::SkillBackstab) {
-		reuse = (BackstabReuseTime * 1000);
-		did_attack = true;
-		if (IsRiposte)
-			reuse = 0;
-
-		TryBackstab(target,reuse);
-	}
-	classattack_timer.Start(reuse / HasteModifier);
 }
 
 int32 Bot::CheckAggroAmount(uint16 spellid) {
